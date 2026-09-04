@@ -1,12 +1,12 @@
 # RAPOR ONLINE
 
-Aplikasi rapor online sederhana berbasis PHP native dan MySQL/MariaDB. Proyek ini tidak menggunakan Laravel atau framework PHP lain.
+Aplikasi rapor online sederhana berbasis PHP native dan SQLite. Proyek ini tidak menggunakan Laravel atau framework PHP lain.
 
 ## Teknologi
 
 - PHP 8.2 atau lebih baru
-- MySQL/MariaDB
-- PDO dengan ekstensi `pdo_mysql`
+- SQLite
+- PDO dengan ekstensi `pdo_sqlite`
 - HTML dan CSS
 - Composer hanya bila library PDF diperlukan
 
@@ -17,7 +17,7 @@ Aplikasi rapor online sederhana berbasis PHP native dan MySQL/MariaDB. Proyek in
 - `auth/`: login dan logout
 - `staff/`: dashboard serta pengelolaan siswa, nilai, dan rapor
 - `publik/`: pencarian dan unduh rapor yang sudah dipublikasikan
-- `database/`: schema dan data awal MySQL
+- `database/`: schema, data awal, setup, dan panel database lokal
 - `uploads/rapor/`: file PDF rapor
 - `Staff/` dan `Wali dan Murid/`: halaman HTML lama sebagai referensi migrasi
 
@@ -25,13 +25,14 @@ Detail tahapan pengembangan tersedia di [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_
 
 ## Menjalankan Lokal
 
-1. Buat database `rapor_online` pada MySQL/MariaDB.
-2. Import `database/schema.sql`, lalu `database/seed.sql` setelah file tersebut dibuat.
-3. Salin konfigurasi koneksi database ke `config/koneksi.php` dan jangan menyimpan password production di repository.
+1. Pastikan ekstensi `pdo_sqlite` aktif.
+2. Buat database dan tabel dengan perintah `php database/setup.php`.
+3. Jalankan dari folder root project:
 4. Jalankan dari folder root project:
 
 	```bash
-	php -S localhost:8000
+	php -S localhost:8000 -t .
 	```
 
-5. Buka `http://localhost:8000/` pada browser.
+4. Buka `http://localhost:8000/` pada browser.
+5. Panel database lokal tersedia di `http://localhost:8000/database/`.

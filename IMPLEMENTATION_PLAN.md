@@ -19,30 +19,25 @@ Implementasi menggunakan PHP 8.2+, MySQL/MariaDB, SQL, HTML, dan CSS. Tidak ada 
 - Belum ada database, backend, login, validasi server, penyimpanan data, atau generator PDF.
 - Link dashboard pada `inputsiswa.html` perlu diarahkan ke halaman dashboard yang benar.
 
-## 3. Struktur Target
+## 3. Struktur Target PHP Native
 
 ```text
 RAPOR_ONLINE/
-├── app/
-│   ├── config/
-│   │   └── database.php
-│   ├── middleware/
-│   │   └── auth.php
-│   ├── services/
-│   │   ├── AuthService.php
-│   │   ├── ReportService.php
-│   │   └── PdfService.php
-│   └── helpers.php
+├── config/
+│   └── koneksi.php
+├── includes/
+│   ├── auth.php
+│   ├── fungsi.php
+│   ├── header.php
+│   └── footer.php
+├── auth/
+│   ├── login.php
+│   └── logout.php
 ├── database/
 │   ├── schema.sql
 │   └── seed.sql
-├── public/
-│   ├── index.php
-│   ├── login.php
-│   ├── logout.php
-│   ├── assets/
-│   └── downloads/
 ├── staff/
+│   ├── index.php
 │   ├── dashboard.php
 │   ├── siswa/
 │   ├── nilai/
@@ -50,15 +45,32 @@ RAPOR_ONLINE/
 │   ├── rapor/
 │   └── users/
 ├── publik/
-│   └── rapor.php
-├── storage/
-│   └── reports/
+│   ├── index.php
+│   ├── rapor.php
+│   └── download.php
+├── assets/
+│   ├── css/
+│   └── img/
+├── uploads/
+│   └── rapor/
+├── index.php
 ├── Staff/
 ├── Wali dan Murid/
+├── composer.json
 └── IMPLEMENTATION_PLAN.md
 ```
 
-Folder HTML lama dipertahankan sebagai referensi selama migrasi. Setelah halaman PHP siap, akses produksi diarahkan ke folder `public/`, `staff/`, dan `publik/`.
+`config/`, `includes/`, dan `database/` berisi file pendukung yang tidak boleh diakses langsung dari browser. Folder `staff/`, `publik/`, dan `auth/` berisi file PHP sebagai halaman sekaligus pemroses form sederhana. Folder `uploads/` harus dilindungi dari eksekusi script dan berisi PDF rapor dengan nama file acak.
+
+Folder HTML lama dipertahankan sebagai referensi selama migrasi. Aplikasi dijalankan dari root project menggunakan PHP built-in server atau virtual host Apache; tidak ada front controller, namespace aplikasi, service container, atau struktur `app/` dan `public/` seperti Laravel.
+
+### Aturan implementasi sederhana
+
+- Gunakan `require_once` untuk memanggil `config/koneksi.php`, `includes/auth.php`, dan `includes/fungsi.php`.
+- Gunakan PDO dan prepared statement untuk query MySQL.
+- Proses form boleh berada di file halaman yang sama atau file `proses.php` pada folder fitur terkait.
+- Gunakan session PHP bawaan untuk login dan pengecekan role.
+- Gunakan Composer hanya bila library PDF diperlukan; Composer bukan framework aplikasi.
 
 ## 4. Model Data
 
@@ -144,7 +156,7 @@ Tambahkan foreign key, index pada `nisn`, `nama`, dan status rapor, serta constr
 
 ### Area publik
 
-1. Pengunjung membuka `public/index.php` atau `publik/rapor.php`.
+1. Pengunjung membuka `index.php` atau `publik/rapor.php`.
 2. Pengunjung mengisi NISN atau nama siswa.
 3. Backend hanya mencari data pada rapor dengan status `published`.
 4. Sistem menampilkan nama, NISN, kelas, semester, tahun pelajaran, dan tombol unduh.
@@ -153,13 +165,13 @@ Tambahkan foreign key, index pada `nisn`, `nama`, dan status rapor, serta constr
 
 ### Area staff dan admin
 
-1. User membuka `public/login.php`.
+1. User membuka `auth/login.php`.
 2. Backend memvalidasi username dan password menggunakan `password_verify`.
 3. User berhasil login lalu diarahkan ke `staff/dashboard.php`.
-4. Middleware memeriksa session dan role pada setiap halaman internal.
+4. `includes/auth.php` memeriksa session dan role pada setiap halaman internal.
 5. Staff mengelola siswa dan nilai.
 6. Admin dapat melakukan semua tindakan staff, mengelola user, dan mempublikasikan rapor.
-7. User keluar melalui `public/logout.php`, lalu session dihancurkan.
+7. User keluar melalui `auth/logout.php`, lalu session dihancurkan.
 
 ## 6. Matriks Hak Akses
 
@@ -199,7 +211,7 @@ mysql --version
 
 - [ ] Buat `database/schema.sql`.
 - [ ] Buat `database/seed.sql` untuk akun admin awal dan data demo.
-- [ ] Buat koneksi PDO pada `app/config/database.php`.
+- [ ] Buat koneksi PDO pada `config/koneksi.php`.
 - [ ] Gunakan prepared statements untuk semua query.
 - [ ] Jangan menyimpan password asli; gunakan `password_hash`.
 
@@ -210,12 +222,12 @@ mysql -u USERNAME -p rapor_online < database/schema.sql
 mysql -u USERNAME -p rapor_online < database/seed.sql
 ```
 
-### Tahap 2 - Autentikasi dan middleware
+### Tahap 2 - Autentikasi dan pemeriksaan session
 
 - [ ] Buat halaman login.
 - [ ] Implementasikan session login.
-- [ ] Buat `require_login()` untuk semua halaman internal.
-- [ ] Buat `require_role('admin')` untuk fitur admin.
+- [ ] Buat fungsi `wajib_login()` pada `includes/auth.php` untuk semua halaman internal.
+- [ ] Buat fungsi `wajib_role('admin')` untuk fitur admin.
 - [ ] Regenerasi session ID setelah login.
 - [ ] Tambahkan logout dan session timeout.
 - [ ] Tambahkan CSRF token pada semua form yang mengubah data.
@@ -278,8 +290,8 @@ Validasi:
 - [ ] Buat halaman detail rapor internal.
 - [ ] Hitung status `draft`, `ready`, dan `published`.
 - [ ] Hanya admin yang dapat mengubah status menjadi `published`.
-- [ ] Buat `PdfService` menggunakan library PDF yang dipilih.
-- [ ] Simpan PDF pada `storage/reports/`, di luar folder publik jika memungkinkan.
+- [ ] Buat helper atau file proses PDF menggunakan library PDF yang dipilih.
+- [ ] Simpan PDF pada `uploads/rapor/` dan blokir eksekusi file script di folder tersebut.
 - [ ] Buat endpoint unduh yang memeriksa session atau status publikasi.
 - [ ] Gunakan nama file acak atau ID internal, bukan NISN langsung.
 
@@ -335,9 +347,9 @@ Validasi:
 
 | Method | Route | Akses | Keterangan |
 |---|---|---|---|
-| GET | `/login.php` | Publik | Form login |
-| POST | `/login.php` | Publik | Proses login |
-| POST | `/logout.php` | Login | Keluar |
+| GET | `/auth/login.php` | Publik | Form login |
+| POST | `/auth/login.php` | Publik | Proses login |
+| POST | `/auth/logout.php` | Login | Keluar |
 | GET | `/staff/dashboard.php` | Staff/Admin | Dashboard |
 | GET/POST | `/staff/siswa/` | Staff/Admin | Daftar dan tambah siswa |
 | GET/POST | `/staff/siswa/edit.php` | Staff/Admin | Ubah siswa |
@@ -367,7 +379,7 @@ Implementasi dianggap selesai apabila:
 
 1. Buat struktur folder target dan file konfigurasi.
 2. Implementasikan schema database serta seed data.
-3. Implementasikan login, session, dan middleware role.
+3. Implementasikan login, session, dan pemeriksaan role.
 4. Migrasikan dashboard dan form siswa.
 5. Implementasikan modul nilai dan status rapor.
 6. Implementasikan publikasi serta PDF.

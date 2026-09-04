@@ -1,0 +1,41 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 2rem;
+    font-family: Arial, sans-serif;
+    color: #243028;
+    background: #f4f7f4;
+}
+
+main {
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+label,
+input,
+button {
+    display: block;
+    margin-bottom: 1rem;
+}
+
+input {
+    width: 100%;
+    max-width: 420px;
+    padding: 0.65rem;
+}
+
+button,
+a {
+    padding: 0.65rem 1rem;
+}
+
+article {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid #d8e1da;
+}

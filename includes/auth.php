@@ -9,7 +9,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 function require_login(): void
 {
     if (empty($_SESSION['user'])) {
-        header('Location: /auth/login.php');
+        header('Location: ../auth/login.php');
         exit;
     }
 }

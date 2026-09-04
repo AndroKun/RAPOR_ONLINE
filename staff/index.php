@@ -2,5 +2,5 @@
 
 declare(strict_types=1);
 
-header('Location: /staff/dashboard.php');
+header('Location: dashboard.php');
 exit;

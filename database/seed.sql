@@ -1,4 +1,4 @@
-USE rapor_online;
+USE raporonline;
 
 -- Generate password_hash dengan password_hash() PHP sebelum menjalankan seed production.
 -- Contoh akun demo sengaja tidak disediakan dengan password default.

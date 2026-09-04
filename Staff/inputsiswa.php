@@ -1,3 +1,6 @@
+<?php
+declare(strict_types=1);
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -13,7 +16,7 @@
             <h2>MTs Roudlotul Qur'an</h2>
             <p style="font-size: 12px; margin-top: 5px;">Portal Staf & Guru</p>
         </div>
-        <a href="index.html" class="menu-item">Dashboard Utama</a>
+        <a href="Dashboard.php" class="menu-item">Dashboard Utama</a>
         <a href="#" class="menu-item active">Input Data Siswa</a>
         <a href="#" class="menu-item">Input Nilai Akademik</a>
         <a href="#" class="menu-item">Input Nilai Tahfidh</a>
@@ -28,9 +31,8 @@
         </div>
 
         <div class="form-container">
-            <form action="#" method="POST">
+            <form action="inputsiswa.php" method="POST">
                 
-                <!-- BAGIAN 1: Identitas Siswa -->
                 <div class="form-section">
                     <h3>A. Data Pribadi Siswa</h3>
                     <div class="form-grid">
@@ -80,7 +82,6 @@
                     </div>
                 </div>
 
-                <!-- BAGIAN 2: Riwayat Sekolah -->
                 <div class="form-section">
                     <h3>B. Riwayat Sekolah</h3>
                     <div class="form-grid">
@@ -103,7 +104,6 @@
                     </div>
                 </div>
 
-                <!-- BAGIAN 3: Data Orang Tua & Wali -->
                 <div class="form-section">
                     <h3>C. Data Orang Tua & Wali</h3>
                     <div class="form-grid">

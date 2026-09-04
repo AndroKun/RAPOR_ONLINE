@@ -1,0 +1,94 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+.header {
+    background-color: #1a5632;
+    color: white;
+    text-align: center;
+    padding: 30px 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.header h1 {
+    margin: 0;
+    font-size: 24px;
+}
+.header p {
+    margin: 5px 0 0 0;
+    font-size: 14px;
+    color: #e8c678;
+}
+.container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+.search-box {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    text-align: center;
+}
+.search-box input {
+    width: 80%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+.search-box button {
+    background-color: #1a5632;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.search-box button:hover {
+    background-color: #134225;
+}
+.result-card {
+    background: white;
+    margin-top: 30px;
+    padding: 25px;
+    border-radius: 10px;
+    border-left: 5px solid #e8c678;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.result-card h3 {
+    margin-top: 0;
+    color: #1a5632;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+.student-info p {
+    margin: 8px 0;
+    font-size: 15px;
+}
+.download-btn {
+    display: block;
+    text-align: center;
+    background-color: #e8c678;
+    color: #333;
+    text-decoration: none;
+    padding: 12px;
+    margin-top: 20px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+.download-btn:hover {
+    background-color: #d6b465;
+}
+.footer {
+    text-align: center;
+    margin-top: 50px;
+    font-size: 12px;
+    color: #777;
+}

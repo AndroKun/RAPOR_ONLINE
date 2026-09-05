@@ -10,183 +10,185 @@ require_academic_access();
 
 $user = current_user();
 $isAdmin = ($user['role'] ?? '') === 'admin';
-$teacherMapel = $user['mata_pelajaran'] ?? null;
+$teacherMapel = trim((string)($user['mata_pelajaran'] ?? ''));
 
 // Daftar Mata Pelajaran Dinamis dari Database
 $availableSubjects = get_all_subjects($pdo);
 
-// Tentukan Mata Pelajaran Aktif
-if ($isAdmin) {
-    // Admin bisa memilih mapel apapun dari GET/POST, default ke yang pertama
-    $selectedSubject = trim($_GET['subject'] ?? ($_POST['subject'] ?? $availableSubjects[6])); // default Bahasa Indonesia
-    if (!in_array($selectedSubject, $availableSubjects, true)) {
-        $selectedSubject = $availableSubjects[6];
-    }
-} else {
-    // Guru / Staff terkunci hanya pada mapel yang diampunya
-    if (!empty($teacherMapel) && in_array($teacherMapel, $availableSubjects, true)) {
-        $selectedSubject = $teacherMapel;
-    } else {
-        // Fallback jika belum diset oleh admin
-        $selectedSubject = trim($_GET['subject'] ?? ($_POST['subject'] ?? $availableSubjects[6]));
+// Ambil semua data siswa untuk dropdown
+$stmtAllStudents = $pdo->query("SELECT id, nis, nisn, nama, kelas FROM students ORDER BY nama ASC");
+$allStudents = $stmtAllStudents->fetchAll(PDO::FETCH_ASSOC);
+
+// Tentukan Siswa yang sedang dipilih
+$selectedStudentId = filter_input(INPUT_GET, 'student_id', FILTER_VALIDATE_INT) ?: (int)($_POST['student_id'] ?? 0);
+if (!$selectedStudentId && !empty($allStudents)) {
+    // Default to the first student if not specified, or allow 0 for placeholder
+    $selectedStudentId = (int)$allStudents[0]['id'];
+}
+
+$currentStudent = null;
+foreach ($allStudents as $st) {
+    if ((int)$st['id'] === $selectedStudentId) {
+        $currentStudent = $st;
+        break;
     }
 }
 
-// Filter Kelas (7, 8, 9 atau VII, VIII, IX)
-$selectedKelas = trim($_GET['kelas'] ?? ($_POST['kelas'] ?? 'VII'));
-if (!in_array($selectedKelas, ['VII', 'VIII', 'IX', '7', '8', '9'], true)) {
-    $selectedKelas = 'VII';
-}
-
-// Filter Semester (1=Ganjil, 2=Genap)
+// Semester dan Tahun Ajaran
 $selectedSemester = (int)($_GET['semester'] ?? ($_POST['semester'] ?? 2));
 if (!in_array($selectedSemester, [1, 2], true)) {
     $selectedSemester = 2;
 }
-
 $schoolYear = trim($_GET['school_year'] ?? ($_POST['school_year'] ?? '2025/2026'));
 
-$pageTitle = 'Penilaian ' . $selectedSubject . ' - MTs Roudlotul Qur\'an';
-$contentTitle = 'Penilaian Mata Pelajaran: ' . $selectedSubject;
-$contentSubtitle = 'Pengisian nilai per kelas dan semester untuk mata pelajaran yang Anda ampu.';
-$activeMenu = 'nilai';
-
-// Ambil siswa pada kelas terpilih
-$stmtSiswa = $pdo->prepare("
-    SELECT id, nis, nisn, nama, kelas 
-    FROM students 
-    WHERE (kelas = :k1 OR kelas = :k2)
-    ORDER BY nama ASC
-");
-// Cocokkan VII / 7
-$kNum = match($selectedKelas) {
-    'VII', '7' => ['VII', '7'],
-    'VIII', '8' => ['VIII', '8'],
-    'IX', '9' => ['IX', '9'],
-    default => [$selectedKelas, $selectedKelas]
-};
-$stmtSiswa->execute(['k1' => $kNum[0], 'k2' => $kNum[1]]);
-$students = $stmtSiswa->fetchAll();
-
-// Ambil nilai yang sudah ada untuk Mapel, Kelas, dan Semester ini
+// Ambil nilai yang sudah tersimpan untuk siswa ini pada semester & tahun ajaran terpilih
 $existingGrades = [];
-if (!empty($students)) {
-    $studentIds = array_column($students, 'id');
-    $placeholders = implode(',', array_fill(0, count($studentIds), '?'));
-    
-    $sqlGrades = "
-        SELECT student_id, score, description 
+if ($selectedStudentId > 0) {
+    $stmtGrades = $pdo->prepare("
+        SELECT subject, score, description 
         FROM academic_grades 
-        WHERE student_id IN ($placeholders)
-          AND subject = ?
-          AND semester = ?
-          AND school_year = ?
-    ";
-    $params = array_merge($studentIds, [$selectedSubject, $selectedSemester, $schoolYear]);
-    $stmtGrades = $pdo->prepare($sqlGrades);
-    $stmtGrades->execute($params);
-    
-    foreach ($stmtGrades->fetchAll() as $g) {
-        $existingGrades[(int)$g['student_id']] = [
-            'score' => (float)$g['score'],
-            'description' => $g['description'] ?? '',
+        WHERE student_id = :sid AND semester = :sem AND school_year = :sy
+    ");
+    $stmtGrades->execute(['sid' => $selectedStudentId, 'sem' => $selectedSemester, 'sy' => $schoolYear]);
+    foreach ($stmtGrades->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $existingGrades[$row['subject']] = [
+            'score' => (float)$row['score'],
+            'description' => $row['description'] ?? '',
         ];
     }
 }
 
 $errors = [];
 
-// Handle Simpan Nilai Batch
+// Handle Simpan Nilai
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
-    $pScores = $_POST['p_score'] ?? [];
-    $kScores = $_POST['k_score'] ?? [];
-    $notes = $_POST['description'] ?? [];
+    $pScores = $_POST['p_scores'] ?? [];
+    $kScores = $_POST['k_scores'] ?? [];
+    $postStudentId = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
 
-    try {
-        $pdo->beginTransaction();
+    if (!$postStudentId) {
+        $errors[] = 'Silakan pilih siswa terlebih dahulu.';
+    } else {
+        try {
+            $pdo->beginTransaction();
 
-        $stmtUpsert = $pdo->prepare("
-            INSERT INTO academic_grades (student_id, subject, score, description, semester, school_year, created_at, updated_at) 
-            VALUES (:sid, :subj, :score, :desc, :sem, :sy, NOW(), NOW())
-            ON DUPLICATE KEY UPDATE score = VALUES(score), description = VALUES(description), updated_at = NOW()
-        ");
+            $stmtUpsert = $pdo->prepare("
+                INSERT INTO academic_grades (student_id, subject, score, description, semester, school_year, created_at, updated_at) 
+                VALUES (:sid, :subj, :score, :desc, :sem, :sy, NOW(), NOW())
+                ON DUPLICATE KEY UPDATE score = VALUES(score), description = VALUES(description), updated_at = NOW()
+            ");
 
-        $stmtDelete = $pdo->prepare("
-            DELETE FROM academic_grades 
-            WHERE student_id = :sid AND subject = :subj AND semester = :sem AND school_year = :sy
-        ");
+            $stmtDelete = $pdo->prepare("
+                DELETE FROM academic_grades 
+                WHERE student_id = :sid AND subject = :subj AND semester = :sem AND school_year = :sy
+            ");
 
-        $savedCount = 0;
+            $savedCount = 0;
 
-        foreach ($students as $st) {
-            $sid = (int)$st['id'];
-            $valP = trim((string)($pScores[$sid] ?? ''));
-            $valK = trim((string)($kScores[$sid] ?? ''));
-            $desc = trim((string)($notes[$sid] ?? ''));
-
-            if ($valP !== '' || $valK !== '') {
-                $numP = $valP !== '' ? (float)$valP : 0.0;
-                $numK = $valK !== '' ? (float)$valK : $numP;
-                $finalScore = ($valP !== '' && $valK !== '') ? (($numP + $numK) / 2) : ($valP !== '' ? $numP : $numK);
-
-                if ($finalScore < 0 || $finalScore > 100) {
-                    throw new Exception("Nilai untuk siswa '{$st['nama']}' harus berada dalam rentang 0 sampai 100.");
+            foreach ($availableSubjects as $sub) {
+                // If user is a subject teacher, only allow saving their assigned subject (or all if admin)
+                if (!$isAdmin && !empty($teacherMapel) && $teacherMapel !== $sub) {
+                    continue;
                 }
 
-                $stmtUpsert->execute([
-                    'sid' => $sid,
-                    'subj' => $selectedSubject,
-                    'score' => $finalScore,
-                    'desc' => $desc ?: null,
-                    'sem' => $selectedSemester,
-                    'sy' => $schoolYear,
-                ]);
-                $savedCount++;
+                $valP = trim((string)($pScores[$sub] ?? ''));
+                $valK = trim((string)($kScores[$sub] ?? ''));
 
-                // Perbarui status rapor siswa
-                $stmtCountMapel = $pdo->prepare("SELECT COUNT(*) FROM academic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
-                $stmtCountMapel->execute(['sid' => $sid, 'sem' => $selectedSemester, 'sy' => $schoolYear]);
-                $totalMapel = (int)$stmtCountMapel->fetchColumn();
+                if ($valP !== '' || $valK !== '') {
+                    $numP = $valP !== '' ? (float)$valP : 0.0;
+                    $numK = $valK !== '' ? (float)$valK : $numP;
+                    $finalScore = ($valP !== '' && $valK !== '') ? (($numP + $numK) / 2) : ($valP !== '' ? $numP : $numK);
 
-                $stmtCountTahfidh = $pdo->prepare("SELECT COUNT(*) FROM tahfidh_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
-                $stmtCountTahfidh->execute(['sid' => $sid, 'sem' => $selectedSemester, 'sy' => $schoolYear]);
-                $hasTahfidh = (int)$stmtCountTahfidh->fetchColumn() > 0;
+                    if ($finalScore < 0 || $finalScore > 100) {
+                        throw new Exception("Nilai untuk mata pelajaran '{$sub}' harus berada dalam rentang 0 sampai 100.");
+                    }
 
-                $reportStatus = ($totalMapel >= 5 && $hasTahfidh) ? 'ready' : 'draft';
-                $stmtRep = $pdo->prepare("
-                    INSERT INTO reports (student_id, semester, school_year, status) 
-                    VALUES (:sid, :sem, :sy, :status)
-                    ON DUPLICATE KEY UPDATE status = CASE WHEN status = 'published' THEN 'published' ELSE VALUES(status) END
-                ");
-                $stmtRep->execute(['sid' => $sid, 'sem' => $selectedSemester, 'sy' => $schoolYear, 'status' => $reportStatus]);
-            } else {
-                // Hapus nilai jika dikosongkan
-                $stmtDelete->execute([
-                    'sid' => $sid,
-                    'subj' => $selectedSubject,
-                    'sem' => $selectedSemester,
-                    'sy' => $schoolYear,
-                ]);
+                    $stmtUpsert->execute([
+                        'sid' => $postStudentId,
+                        'subj' => $sub,
+                        'score' => $finalScore,
+                        'desc' => null,
+                        'sem' => $selectedSemester,
+                        'sy' => $schoolYear,
+                    ]);
+                    $savedCount++;
+                } else {
+                    // Jika kedua input dikosongkan untuk mapel yang diizinkan
+                    if ($isAdmin || (!empty($teacherMapel) && $teacherMapel === $sub)) {
+                        $stmtDelete->execute([
+                            'sid' => $postStudentId,
+                            'subj' => $sub,
+                            'sem' => $selectedSemester,
+                            'sy' => $schoolYear,
+                        ]);
+                    }
+                }
             }
+
+            // Perbarui status rapor siswa
+            $stmtCountMapel = $pdo->prepare("SELECT COUNT(*) FROM academic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
+            $stmtCountMapel->execute(['sid' => $postStudentId, 'sem' => $selectedSemester, 'sy' => $schoolYear]);
+            $totalMapel = (int)$stmtCountMapel->fetchColumn();
+
+            $stmtCountTahfidh = $pdo->prepare("SELECT COUNT(*) FROM tahfidh_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
+            $stmtCountTahfidh->execute(['sid' => $postStudentId, 'sem' => $selectedSemester, 'sy' => $schoolYear]);
+            $hasTahfidh = (int)$stmtCountTahfidh->fetchColumn() > 0;
+
+            $reportStatus = ($totalMapel >= 5 && $hasTahfidh) ? 'ready' : 'draft';
+            $stmtRep = $pdo->prepare("
+                INSERT INTO reports (student_id, semester, school_year, status) 
+                VALUES (:sid, :sem, :sy, :status) 
+                ON DUPLICATE KEY UPDATE status = CASE WHEN status = 'published' THEN 'published' ELSE VALUES(status) END
+            ");
+            $stmtRep->execute(['sid' => $postStudentId, 'sem' => $selectedSemester, 'sy' => $schoolYear, 'status' => $reportStatus]);
+
+            $pdo->commit();
+
+            $studentName = $currentStudent['nama'] ?? 'Siswa';
+            set_flash('success', "Nilai akademik untuk {$studentName} berhasil disimpan ({$savedCount} mata pelajaran terisi).");
+            redirect("/staff/nilai/input.php?student_id={$postStudentId}&semester={$selectedSemester}&school_year=" . urlencode($schoolYear));
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $errors[] = $e->getMessage();
         }
-
-        $pdo->commit();
-
-        set_flash('success', "Nilai mata pelajaran '{$selectedSubject}' Kelas {$selectedKelas} (Semester {$selectedSemester}) berhasil disimpan ({$savedCount} siswa diperbarui).");
-        redirect("/staff/nilai/input.php?kelas=" . urlencode($selectedKelas) . "&semester=" . $selectedSemester . "&subject=" . urlencode($selectedSubject));
-    } catch (Exception $e) {
-        $pdo->rollBack();
-        $errors[] = $e->getMessage();
     }
 }
+
+// Generate avatar initials
+$nameWords = preg_split('/\s+/', trim($user['nama_lengkap'] ?? $user['username'] ?? 'Admin Staf')) ?: ['A', 'S'];
+$avatarInitials = '';
+if (count($nameWords) >= 2) {
+    $avatarInitials = strtoupper(mb_substr($nameWords[0], 0, 1) . mb_substr($nameWords[1], 0, 1));
+} else {
+    $avatarInitials = strtoupper(mb_substr($nameWords[0], 0, 2));
+}
+
+$pageTitle = 'Input Nilai Akademik - MTs Roudlotul Qur\'an';
+$activeMenu = 'nilai';
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
+<!-- Custom Hero Header Banner Matching Reference Image -->
+<div style="background: linear-gradient(135deg, #157A42 0%, #126336 100%); border-radius: 18px; padding: 26px 30px; color: #FFFFFF; display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; flex-wrap: wrap; gap: 16px; box-shadow: 0 8px 24px rgba(21, 122, 66, 0.18);">
+    <div>
+        <h1 style="margin: 0; font-size: 25px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.01em;">Input Nilai Akademik</h1>
+        <p style="margin: 6px 0 0; color: #D1F0DC; font-size: 13.5px; max-width: 650px; line-height: 1.45;">
+            Isi nilai untuk setiap mata pelajaran — kamu bisa isi sebagian dulu, sisanya bisa dilanjutkan nanti.
+        </p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; background: rgba(0, 0, 0, 0.22); border: 1px solid rgba(255, 255, 255, 0.15); padding: 6px 14px 6px 8px; border-radius: 999px;">
+        <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--gold-500); color: #1A202C; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;">
+            <?= e($avatarInitials) ?>
+        </span>
+        <span style="font-size: 13px; font-weight: 700; color: #FFFFFF;"><?= e($user['nama_lengkap'] ?? $user['username'] ?? 'Admin Staf') ?></span>
+    </div>
+</div>
+
 <?php if (!empty($errors)): ?>
-    <div class="alert alert-danger">
+    <div class="alert alert-danger" style="margin-bottom: 20px;">
         <ul style="margin:0; padding-left:20px;">
             <?php foreach ($errors as $err): ?>
                 <li><?= e($err) ?></li>
@@ -195,251 +197,203 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
 <?php endif; ?>
 
-<!-- Form Filter & Pemilihan Mapel/Kelas/Semester -->
-<div class="picker-card">
-    <!-- Mapel Info / Dropdown -->
-    <div class="picker-field" style="min-width: 240px;">
-        <label>Mata Pelajaran</label>
-        <?php if ($isAdmin): ?>
-            <select id="filterSubject" onchange="applyPenilaianFilter()">
-                <?php foreach ($availableSubjects as $sub): ?>
-                    <option value="<?= e($sub) ?>" <?= $selectedSubject === $sub ? 'selected' : '' ?>>
-                        📘 <?= e($sub) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        <?php else: ?>
-            <div style="padding: 10px 14px; background: #FFFFFF; border: 1.5px solid var(--green-700); border-radius: 10px; font-weight: 700; color: var(--green-900); display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 16px;">📘</span>
-                <span><?= e($selectedSubject) ?></span>
-                <span class="badge badge-success" style="margin-left: auto; font-size: 11px;">Mata Pelajaran Anda</span>
-            </div>
-        <?php endif; ?>
+<!-- Tips Callout Card Matching Reference Image -->
+<div style="background: #FEF7E6; border: 1.5px solid #F3DCAC; border-radius: 14px; padding: 14px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 22px;">
+    <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--gold-500); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(217,155,38,0.35);">
+        💡
     </div>
-
-    <!-- Dropdown Kelas (7, 8, 9) -->
-    <div class="picker-field" style="min-width: 140px; max-width: 180px;">
-        <label>Pilih Kelas</label>
-        <select id="filterKelas" onchange="applyPenilaianFilter()">
-            <option value="VII" <?= in_array($selectedKelas, ['VII', '7']) ? 'selected' : '' ?>>Kelas 7 (VII)</option>
-            <option value="VIII" <?= in_array($selectedKelas, ['VIII', '8']) ? 'selected' : '' ?>>Kelas 8 (VIII)</option>
-            <option value="IX" <?= in_array($selectedKelas, ['IX', '9']) ? 'selected' : '' ?>>Kelas 9 (IX)</option>
-        </select>
-    </div>
-
-    <!-- Dropdown Semester (Ganjil & Genap) -->
-    <div class="picker-field" style="min-width: 180px; max-width: 220px;">
-        <label>Pilih Semester</label>
-        <select id="filterSemester" onchange="applyPenilaianFilter()">
-            <option value="1" <?= $selectedSemester === 1 ? 'selected' : '' ?>>Semester 1 (Ganjil)</option>
-            <option value="2" <?= $selectedSemester === 2 ? 'selected' : '' ?>>Semester 2 (Genap)</option>
-        </select>
-    </div>
-
-    <!-- Info Chip Siswa -->
-    <div class="info-chip" style="margin-left: auto;">
-        <span>Total di Kelas: <b><?= count($students) ?> Siswa</b></span> &nbsp;·&nbsp;
-        <span>Tahun Pelajaran: <b><?= e($schoolYear) ?></b></span>
+    <div style="font-size: 13.5px; color: #78350F; line-height: 1.5;">
+        <strong>Tips pengisian:</strong> nilai memakai skala 0–100. Predikat A/B/C/D akan muncul otomatis begitu kolom Pengetahuan dan Keterampilan sudah terisi keduanya.
     </div>
 </div>
 
-<!-- Form Penilaian Batch Per Kelas -->
-<form class="card" method="POST" action="" id="formPenilaian">
+<!-- Main Form Penilaian -->
+<form method="POST" action="" id="formAkademik">
     <?= csrf_field() ?>
-    <input type="hidden" name="subject" value="<?= e($selectedSubject) ?>">
-    <input type="hidden" name="kelas" value="<?= e($selectedKelas) ?>">
     <input type="hidden" name="semester" value="<?= $selectedSemester ?>">
     <input type="hidden" name="school_year" value="<?= e($schoolYear) ?>">
 
-    <div class="panel-head">
-        <div>
-            <h2>Tabel Penilaian: <?= e($selectedSubject) ?> (Kelas <?= e($selectedKelas) ?>)</h2>
-            <p class="section-hint" style="margin: 3px 0 0;">Ketik nilai Pengetahuan &amp; Keterampilan (0–100). Predikat akan terhitung otomatis secara live.</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <button type="submit" class="btn btn-primary">💾 Simpan Semua Nilai</button>
-        </div>
-    </div>
-
-    <!-- Live Search Filter untuk Ketik Nama Siswa -->
-    <div class="filters" style="margin-bottom: 18px;">
-        <input type="text" id="liveSearchInput" placeholder="🔍 Ketik nama siswa atau NISN untuk mencari dengan cepat..." autofocus>
-        <button type="button" class="btn btn-ghost" onclick="resetLiveSearch()">Reset Pencarian</button>
-    </div>
-
-    <div class="table-responsive">
-        <table class="responsive-stack" id="gradingTable">
-            <thead>
-                <tr>
-                    <th style="width: 45px;" class="num">No</th>
-                    <th style="width: 120px;">NISN</th>
-                    <th>Nama Lengkap Siswa</th>
-                    <th class="num" style="width: 110px;">Pengetahuan</th>
-                    <th class="num" style="width: 110px;">Keterampilan</th>
-                    <th class="num" style="width: 95px;">Rata-Rata</th>
-                    <th class="num" style="width: 90px;">Predikat</th>
-                    <th style="min-width: 240px;">Capaian Kompetensi / Catatan Guru</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($students)): ?>
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 35px; color: var(--ink-soft);">
-                            Belum ada siswa yang terdaftar di <strong>Kelas <?= e($selectedKelas) ?></strong>.
-                            Silakan tambahkan data siswa di menu <strong>Input Data Siswa</strong>.
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php 
-                    $no = 1; 
-                    foreach ($students as $st): 
-                        $sid = (int)$st['id'];
-                        $savedScore = isset($existingGrades[$sid]) ? $existingGrades[$sid]['score'] : null;
-                        $savedDesc = isset($existingGrades[$sid]) ? $existingGrades[$sid]['description'] : '';
-
-                        // Predikat awal
-                        $pred = '–';
-                        $predClass = '';
-                        if ($savedScore !== null) {
-                            if ($savedScore >= 90) { $pred = 'A'; $predClass = 'p-a'; }
-                            elseif ($savedScore >= 80) { $pred = 'B'; $predClass = 'p-b'; }
-                            elseif ($savedScore >= 70) { $pred = 'C'; $predClass = 'p-c'; }
-                            else { $pred = 'D'; $predClass = 'p-d'; }
-                        }
-                    ?>
-                        <tr data-student-search="<?= e(strtolower($st['nama'] . ' ' . $st['nisn'] . ' ' . $st['nis'])) ?>">
-                            <td class="num" data-label="No"><?= $no++ ?></td>
-                            <td class="nisn" data-label="NISN"><?= e($st['nisn']) ?></td>
-                            <td class="name" data-label="Nama Siswa"><?= e($st['nama']) ?></td>
-                            <td class="num" data-label="Pengetahuan">
-                                <input type="number" step="0.1" min="0" max="100" 
-                                       name="p_score[<?= $sid ?>]" 
-                                       class="score-input input-p" 
-                                       data-sid="<?= $sid ?>"
-                                       value="<?= $savedScore !== null ? e((string)$savedScore) : '' ?>"
-                                       placeholder="0 - 100">
-                            </td>
-                            <td class="num" data-label="Keterampilan">
-                                <input type="number" step="0.1" min="0" max="100" 
-                                       name="k_score[<?= $sid ?>]" 
-                                       class="score-input input-k" 
-                                       data-sid="<?= $sid ?>"
-                                       value="<?= $savedScore !== null ? e((string)$savedScore) : '' ?>"
-                                       placeholder="0 - 100">
-                            </td>
-                            <td class="num" data-label="Rata-Rata">
-                                <strong id="avg-<?= $sid ?>"><?= $savedScore !== null ? number_format($savedScore, 1) : '–' ?></strong>
-                            </td>
-                            <td class="num predikat" data-label="Predikat">
-                                <span class="predikat-badge <?= $predClass ?>" id="badge-<?= $sid ?>"><?= $pred ?></span>
-                            </td>
-                            <td data-label="Catatan Guru">
-                                <input type="text" name="description[<?= $sid ?>]" 
-                                       value="<?= e($savedDesc) ?>" 
-                                       placeholder="Contoh: Sangat baik dalam memahami materi..." 
-                                       style="width: 100%; padding: 8px 12px; font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
-                            </td>
-                        </tr>
+    <!-- Pilih Siswa Card -->
+    <div class="card" style="margin-bottom: 22px; padding: 18px 22px; border-radius: 14px; background: #FFFFFF; border: 1px solid var(--line);">
+        <label for="studentSelect" style="display: block; font-size: 13px; font-weight: 700; color: var(--ink-soft); margin-bottom: 8px;">Pilih Siswa</label>
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 260px;">
+                <select id="studentSelect" name="student_id" onchange="onStudentChange(this)" 
+                        style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid var(--line); font-size: 14px; font-weight: 600; color: var(--green-900); background: #FFFFFF; font-family: inherit; cursor: pointer;">
+                    <option value="">— Cari nama siswa —</option>
+                    <?php foreach ($allStudents as $st): ?>
+                        <option value="<?= (int)$st['id'] ?>" 
+                                data-nisn="<?= e($st['nisn']) ?>" 
+                                data-kelas="<?= e($st['kelas']) ?>"
+                                <?= ($selectedStudentId === (int)$st['id']) ? 'selected' : '' ?>>
+                            <?= e($st['nama']) ?>
+                        </option>
                     <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
+                </select>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span id="badgeNisn" style="background: #D1F0DC; color: var(--green-800); font-weight: 700; font-size: 12.5px; padding: 7px 16px; border-radius: 999px;">
+                    NISN: <span id="valNisn"><?= !empty($currentStudent['nisn']) ? e($currentStudent['nisn']) : '-' ?></span>
+                </span>
+                <span id="badgeKelas" style="background: #D1F0DC; color: var(--green-800); font-weight: 700; font-size: 12.5px; padding: 7px 16px; border-radius: 999px;">
+                    Kelas: <span id="valKelas"><?= !empty($currentStudent['kelas']) ? e($currentStudent['kelas']) : '-' ?></span>
+                </span>
+                <span style="font-size: 13px; font-weight: 600; color: var(--ink-soft); padding: 6px 12px; background: #F8FAF9; border-radius: 8px; border: 1px solid var(--line);">
+                    <?= $selectedSemester === 1 ? 'Ganjil' : 'Genap' ?> <?= e($schoolYear) ?>
+                </span>
+            </div>
+        </div>
     </div>
 
-    <?php if (!empty($students)): ?>
-        <div class="form-actions" style="margin-top: 24px;">
-            <a href="<?= e(base_url('/staff/dashboard.php')) ?>" class="btn btn-ghost">Kembali ke Dashboard</a>
-            <button type="submit" class="btn btn-primary" style="padding: 12px 28px; font-size: 14.5px;">
-                💾 Simpan Semua Nilai <?= e($selectedSubject) ?>
-            </button>
+    <!-- Section Subheader -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <h3 style="margin: 0; font-size: 16.5px; font-weight: 800; color: var(--green-900);">Nilai Per Mata Pelajaran</h3>
+        <div id="statusCounter" style="font-size: 13.5px; font-weight: 600; color: var(--ink-soft);">
+            0 dari <?= count($availableSubjects) ?> mapel terisi
         </div>
-    <?php endif; ?>
+    </div>
+
+    <!-- Cards Grid (2 Columns) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 16px; margin-bottom: 26px;">
+        <?php 
+        $religiousSubjects = ['Al-Qur\'an Hadits', 'Aqidah Akhlak', 'Fiqih', 'Sejarah Kebudayaan Islam', 'Sejarah Kebudayaan Islam (SKI)', 'Bahasa Arab'];
+        
+        foreach ($availableSubjects as $sub): 
+            $isAgama = in_array($sub, $religiousSubjects, true);
+            $kelompokLabel = $isAgama ? 'Kelompok Agama' : 'Kelompok Umum';
+            
+            $existingScore = isset($existingGrades[$sub]) ? (string)$existingGrades[$sub]['score'] : '';
+            // Pre-fill Pengetahuan & Keterampilan with existing score if available
+            $pVal = $existingScore;
+            $kVal = $existingScore;
+            
+            $isEditable = $isAdmin || (empty($teacherMapel) || $teacherMapel === $sub);
+        ?>
+            <div class="subject-card" style="background: #FFFFFF; border: 1px solid var(--line); border-left: 4.5px solid var(--gold-500); border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 10px rgba(18,99,54,0.03);">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px;">
+                    <div>
+                        <div style="font-size: 15px; font-weight: 800; color: var(--green-900);"><?= e($sub) ?></div>
+                        <span style="display: inline-block; background: #FEF3C7; color: #92400E; font-size: 11px; font-weight: 700; padding: 2.5px 9px; border-radius: 999px; margin-top: 4px;">
+                            <?= e($kelompokLabel) ?>
+                        </span>
+                    </div>
+                    <div class="predikat-badge-box" id="pred_<?= md5($sub) ?>" 
+                         style="width: 34px; height: 28px; border-radius: 6px; background: #EDF7F0; color: var(--green-800); font-size: 13.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                        -
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 4px;">Pengetahuan</label>
+                        <input type="number" step="0.1" min="0" max="100" name="p_scores[<?= e($sub) ?>]" value="<?= e($pVal) ?>" placeholder="" 
+                               class="score-input p-score" data-mapel="<?= e($sub) ?>" data-pred-id="pred_<?= md5($sub) ?>"
+                               <?= !$isEditable ? 'readonly style="background: #f7faf8; cursor: not-allowed;"' : '' ?>
+                               style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 700; text-align: center; font-family: inherit; color: var(--green-900);">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 4px;">Keterampilan</label>
+                        <input type="number" step="0.1" min="0" max="100" name="k_scores[<?= e($sub) ?>]" value="<?= e($kVal) ?>" placeholder="" 
+                               class="score-input k-score" data-mapel="<?= e($sub) ?>" data-pred-id="pred_<?= md5($sub) ?>"
+                               <?= !$isEditable ? 'readonly style="background: #f7faf8; cursor: not-allowed;"' : '' ?>
+                               style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 700; text-align: center; font-family: inherit; color: var(--green-900);">
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Form Action Bottom -->
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; padding-bottom: 20px;">
+        <button type="submit" class="btn btn-primary" style="padding: 13px 32px; font-size: 15px; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 14px rgba(21,122,66,0.25);">
+            💾 Simpan Nilai Akademik Siswa
+        </button>
+    </div>
 </form>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Live Predikat & Average Calculation
-    const table = document.getElementById('gradingTable');
-    if (table) {
-        table.addEventListener('input', (e) => {
-            if (e.target.classList.contains('input-p') || e.target.classList.contains('input-k')) {
-                const sid = e.target.dataset.sid;
-                if (!sid) return;
+function onStudentChange(select) {
+    const studentId = select.value;
+    if (studentId) {
+        window.location.href = `<?= e(base_url('/staff/nilai/input.php')) ?>?student_id=${studentId}&semester=<?= $selectedSemester ?>&school_year=<?= urlencode($schoolYear) ?>`;
+    } else {
+        document.getElementById('valNisn').textContent = '-';
+        document.getElementById('valKelas').textContent = '-';
+    }
+}
 
-                const inputP = table.querySelector(`.input-p[data-sid="${sid}"]`);
-                const inputK = table.querySelector(`.input-k[data-sid="${sid}"]`);
-                const avgElem = document.getElementById(`avg-${sid}`);
-                const badgeElem = document.getElementById(`badge-${sid}`);
+function calculateGradePredikat(pVal, kVal) {
+    if (pVal === '' || kVal === '') {
+        return '-';
+    }
+    const p = parseFloat(pVal);
+    const k = parseFloat(kVal);
+    if (isNaN(p) || isNaN(k)) {
+        return '-';
+    }
+    const avg = (p + k) / 2;
+    if (avg >= 90) return 'A';
+    if (avg >= 80) return 'B';
+    if (avg >= 70) return 'C';
+    return 'D';
+}
 
-                const valP = inputP ? inputP.value.trim() : '';
-                const valK = inputK ? inputK.value.trim() : '';
+function refreshAllPredikatsAndCounter() {
+    const cards = document.querySelectorAll('.subject-card');
+    let filledCount = 0;
+    const totalCount = cards.length;
 
-                if (valP === '' && valK === '') {
-                    if (avgElem) avgElem.textContent = '–';
-                    if (badgeElem) {
-                        badgeElem.textContent = '–';
-                        badgeElem.className = 'predikat-badge';
-                    }
-                    return;
-                }
+    cards.forEach(card => {
+        const pInput = card.querySelector('.p-score');
+        const kInput = card.querySelector('.k-score');
+        const predBox = card.querySelector('.predikat-badge-box');
 
-                let avg = 0;
-                if (valP !== '' && valK !== '') {
-                    avg = (Number(valP) + Number(valK)) / 2;
-                } else if (valP !== '') {
-                    avg = Number(valP);
-                } else {
-                    avg = Number(valK);
-                }
+        const p = pInput ? pInput.value.trim() : '';
+        const k = kInput ? kInput.value.trim() : '';
 
-                if (avgElem) avgElem.textContent = avg.toFixed(1);
-
-                if (badgeElem) {
-                    let pLabel = 'D';
-                    let pClass = 'p-d';
-                    if (avg >= 90) { pLabel = 'A'; pClass = 'p-a'; }
-                    else if (avg >= 80) { pLabel = 'B'; pClass = 'p-b'; }
-                    else if (avg >= 70) { pLabel = 'C'; pClass = 'p-c'; }
-
-                    badgeElem.textContent = pLabel;
-                    badgeElem.className = `predikat-badge ${pClass}`;
-                }
+        const pred = calculateGradePredikat(p, k);
+        if (predBox) {
+            predBox.textContent = pred;
+            if (pred === 'A') {
+                predBox.style.background = '#D1FAE5';
+                predBox.style.color = '#065F46';
+            } else if (pred === 'B') {
+                predBox.style.background = '#DBEAFE';
+                predBox.style.color = '#1E40AF';
+            } else if (pred === 'C') {
+                predBox.style.background = '#FEF3C7';
+                predBox.style.color = '#92400E';
+            } else if (pred === 'D') {
+                predBox.style.background = '#FEE2E2';
+                predBox.style.color = '#991B1B';
+            } else {
+                predBox.style.background = '#EDF7F0';
+                predBox.style.color = '#157A42';
             }
-        });
-    }
-
-    // 2. Live Search Filter per Siswa
-    const searchInput = document.getElementById('liveSearchInput');
-    const rows = Array.from(document.querySelectorAll('#gradingTable tbody tr[data-student-search]'));
-
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            const query = searchInput.value.trim().toLowerCase();
-            rows.forEach(r => {
-                const text = r.dataset.studentSearch || '';
-                r.style.display = (!query || text.includes(query)) ? '' : 'none';
-            });
-        });
-    }
-
-    window.resetLiveSearch = function() {
-        if (searchInput) {
-            searchInput.value = '';
-            rows.forEach(r => r.style.display = '');
-            searchInput.focus();
         }
-    };
 
-    // 3. Dropdown Filter Router
-    window.applyPenilaianFilter = function() {
-        const k = document.getElementById('filterKelas').value;
-        const s = document.getElementById('filterSemester').value;
-        const subElem = document.getElementById('filterSubject');
-        const sub = subElem ? subElem.value : '<?= e(urlencode($selectedSubject)) ?>';
+        if (p !== '' || k !== '') {
+            filledCount++;
+        }
+    });
 
-        const url = `<?= e(base_url('/staff/nilai/input.php')) ?>?kelas=${encodeURIComponent(k)}&semester=${encodeURIComponent(s)}&subject=${encodeURIComponent(sub)}`;
-        window.location.href = url;
-    };
+    const statusCounter = document.getElementById('statusCounter');
+    if (statusCounter) {
+        statusCounter.textContent = `${filledCount} dari ${totalCount} mapel terisi`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Attach input listeners
+    document.querySelectorAll('.score-input').forEach(input => {
+        input.addEventListener('input', () => {
+            refreshAllPredikatsAndCounter();
+        });
+    });
+
+    // Initial calculation on page load
+    refreshAllPredikatsAndCounter();
 });
 </script>
 

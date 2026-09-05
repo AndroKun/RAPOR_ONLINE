@@ -159,15 +159,15 @@ h1, h2, h3, .brand-name {
   color: #FFFFFF;
 }
 .nav a.active {
-  background: #FFFFFF;
-  color: var(--green-800);
+  background: var(--gold-500);
+  color: #1A202C;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 14px rgba(217, 155, 38, 0.35);
 }
 .nav a.active svg path, 
 .nav a.active svg circle, 
 .nav a.active svg rect {
-  stroke: var(--green-800);
+  stroke: #1A202C;
 }
 
 .logout {

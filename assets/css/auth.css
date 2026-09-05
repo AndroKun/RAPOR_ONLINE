@@ -1,0 +1,142 @@
+/* ==========================================================================
+   CSS AUTHENTICATION & LOGIN - MTs ROUDLOTUL QUR'AN
+   ========================================================================== */
+
+:root {
+    --primary-color: #1a5632;
+    --primary-dark: #134225;
+    --accent-gold: #e8c678;
+    --bg-body: #f0f4f2;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background: radial-gradient(circle at top, #247545 0%, #134225 100%);
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+    overflow: hidden;
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.login-header {
+    background: linear-gradient(135deg, #1a5632 0%, #134225 100%);
+    color: white;
+    padding: 30px 25px;
+    text-align: center;
+    border-bottom: 3px solid var(--accent-gold);
+}
+
+.login-header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.login-header p {
+    margin: 6px 0 0 0;
+    font-size: 13px;
+    color: var(--accent-gold);
+}
+
+.login-body {
+    padding: 30px 25px;
+}
+
+.login-group {
+    margin-bottom: 20px;
+}
+
+.login-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.login-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.login-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(26, 86, 50, 0.15);
+}
+
+.btn-login {
+    width: 100%;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 13px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-login:active {
+    transform: scale(0.99);
+}
+
+.login-footer {
+    text-align: center;
+    padding: 15px 25px 25px;
+    font-size: 13px;
+    color: #64748b;
+    border-top: 1px solid #f1f5f9;
+}
+
+.login-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+.login-alert {
+    padding: 12px 15px;
+    background: #fdeaea;
+    color: #c0392b;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    border-left: 4px solid #e74c3c;
+}

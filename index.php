@@ -2,5 +2,5 @@
 
 declare(strict_types=1);
 
-header('Location: publik/index.php');
-exit;
+require_once __DIR__ . '/includes/fungsi.php';
+redirect('/publik/index.php');

@@ -1,0 +1,237 @@
+/* ==========================================================================
+   DESAIN PORTAL PUBLIK RAPOR - MTs ROUDLOTUL QUR'AN
+   ========================================================================== */
+
+:root {
+    --primary-color: #1a5632;
+    --primary-dark: #134225;
+    --primary-light: #237443;
+    --accent-gold: #e8c678;
+    --accent-gold-hover: #d6b465;
+    --bg-body: #f4f7f6;
+    --bg-card: #ffffff;
+    --text-main: #333333;
+    --text-muted: #666666;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background-color: var(--bg-body);
+    margin: 0;
+    padding: 0;
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    text-align: center;
+    padding: 35px 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    position: relative;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 26px;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+}
+
+.header p {
+    margin: 8px 0 0 0;
+    font-size: 15px;
+    color: var(--accent-gold);
+    font-weight: 500;
+}
+
+.header-nav {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.header-nav a {
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 13px;
+    background: rgba(255,255,255,0.15);
+    padding: 6px 14px;
+    border-radius: 20px;
+    transition: all 0.2s;
+}
+
+.header-nav a:hover {
+    background: var(--accent-gold);
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+.container {
+    max-width: 650px;
+    width: 100%;
+    margin: 40px auto;
+    padding: 0 20px;
+    flex: 1;
+}
+
+.search-box {
+    background: white;
+    padding: 35px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    text-align: center;
+    border-top: 4px solid var(--primary-color);
+}
+
+.search-box h2 {
+    margin-top: 0;
+    color: var(--primary-dark);
+    font-size: 22px;
+}
+
+.search-box p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 25px;
+}
+
+.search-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.search-box input {
+    width: 100%;
+    max-width: 480px;
+    padding: 13px 18px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(26, 86, 50, 0.15);
+}
+
+.search-box button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 35px;
+    font-size: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.search-box button:hover {
+    background-color: var(--primary-dark);
+}
+
+.search-box button:active {
+    transform: scale(0.98);
+}
+
+.result-card {
+    background: white;
+    margin-top: 25px;
+    padding: 25px 30px;
+    border-radius: 12px;
+    border-left: 6px solid var(--accent-gold);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.result-card h3 {
+    margin-top: 0;
+    color: var(--primary-color);
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 12px;
+    font-size: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.student-info p {
+    margin: 10px 0;
+    font-size: 14.5px;
+    color: #444;
+}
+
+.student-info strong {
+    color: #111;
+    display: inline-block;
+    width: 140px;
+}
+
+.download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    background-color: var(--accent-gold);
+    color: var(--primary-dark);
+    text-decoration: none;
+    padding: 13px;
+    margin-top: 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14.5px;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.download-btn:hover {
+    background-color: var(--accent-gold-hover);
+    transform: translateY(-1px);
+}
+
+.alert-box {
+    margin-top: 20px;
+    padding: 18px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.alert-notfound {
+    background: #fff8e6;
+    color: #8a6d3b;
+    border: 1px solid #faebcc;
+}
+
+.footer {
+    text-align: center;
+    padding: 30px 20px;
+    font-size: 13px;
+    color: #777;
+    margin-top: auto;
+    border-top: 1px solid #e5e9e7;
+    background: white;
+}
+
+.footer p {
+    margin: 4px 0;
+}

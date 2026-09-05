@@ -12,7 +12,7 @@ $pageTitle = 'Kelola Pengguna - MTs Roudlotul Qur\'an';
 $contentTitle = 'Manajemen Akun Staf & Guru';
 $activeMenu = 'users';
 
-$stmt = $pdo->query("SELECT id, username, nama_lengkap, role, is_active, created_at FROM users ORDER BY role ASC, nama_lengkap ASC");
+$stmt = $pdo->query("SELECT id, username, nama_lengkap, role, mata_pelajaran, is_active, created_at FROM users ORDER BY role ASC, nama_lengkap ASC");
 $users = $stmt->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
@@ -32,8 +32,8 @@ require_once __DIR__ . '/../../includes/header.php';
                     <th>Nama Lengkap</th>
                     <th>Username</th>
                     <th>Hak Akses / Role</th>
+                    <th>Mata Pelajaran yang Diajar</th>
                     <th>Status Akun</th>
-                    <th>Tanggal Dibuat</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -46,8 +46,19 @@ require_once __DIR__ . '/../../includes/header.php';
                         <td>
                             <?php if ($u['role'] === 'admin'): ?>
                                 <span class="badge badge-danger">ADMINISTRATOR</span>
+                            <?php elseif ($u['role'] === 'guru_tahfidh'): ?>
+                                <span class="badge badge-success">GURU TAHFIDH</span>
                             <?php else: ?>
-                                <span class="badge badge-info">STAFF / GURU</span>
+                                <span class="badge badge-info">GURU MAPEL</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if (!empty($u['mata_pelajaran'])): ?>
+                                <span class="badge badge-success">📘 <?= e($u['mata_pelajaran']) ?></span>
+                            <?php elseif ($u['role'] === 'admin'): ?>
+                                <span class="badge badge-secondary">Semua Mapel (Admin)</span>
+                            <?php else: ?>
+                                <span class="badge badge-warning">Belum Diatur</span>
                             <?php endif; ?>
                         </td>
                         <td>
@@ -57,7 +68,6 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <span class="badge badge-danger">NONAKTIF</span>
                             <?php endif; ?>
                         </td>
-                        <td><?= date('d/m/Y H:i', strtotime($u['created_at'])) ?></td>
                         <td>
                             <a href="<?= e(base_url('/staff/users/edit.php?id=' . (int)$u['id'])) ?>" class="action-btn btn-edit">Edit Akun</a>
                         </td>

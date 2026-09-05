@@ -7,9 +7,9 @@ USE `raporonline`;
 -- 1. Users Default
 -- admin : admin123
 -- staff : staff123
-INSERT INTO `users` (`id`, `username`, `password_hash`, `nama_lengkap`, `role`, `is_active`) VALUES
-(1, 'admin', '$2y$10$tZz531r05dK/E88g0m5z3eK1k6V9g9E/u4U.G2pM7gV/B0e3u5B4K', 'Administrator Madrasah', 'admin', 1),
-(2, 'staff', '$2y$10$w4rB5Z38.jKqXj6M4C9mpeV7K7g9E/u4U.G2pM7gV/B0e3u5B4K', 'Ustadzah Siti Fatimah, S.Pd', 'staff', 1)
+INSERT INTO `users` (`id`, `username`, `password_hash`, `nama_lengkap`, `role`, `mata_pelajaran`, `is_active`) VALUES
+(1, 'admin', '$2y$10$TH9wLS.qG.bTlAod7Xb1y.IlVYfvrDjNZSljBKvdEi6Lb/2CatL/K', 'Administrator Madrasah', 'admin', NULL, 1),
+(2, 'staff', '$2y$10$AonUmdGRni/R9ux63OrD8.UR3nLO..AK9nJ58eKk1YCHPszfHi1hi', 'Ustadzah Siti Fatimah, S.Pd', 'staff', 'Bahasa Indonesia', 1)
 ON DUPLICATE KEY UPDATE `username`=VALUES(`username`);
 
 -- 2. Data Siswa Contoh

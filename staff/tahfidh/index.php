@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../includes/fungsi.php';
 require_once __DIR__ . '/../../includes/auth.php';
 
-require_login();
+require_tahfidh_access();
 
 $pageTitle = 'Nilai Tahfidh - MTs Roudlotul Qur\'an';
 $contentTitle = 'Manajemen Nilai Tahfidh Al-Qur\'an';

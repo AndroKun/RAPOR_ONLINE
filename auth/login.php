@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($username === '' || $password === '') {
         $error = 'Username dan password wajib diisi.';
     } else {
-        $stmt = $pdo->prepare('SELECT id, username, password_hash, nama_lengkap, role, is_active FROM users WHERE username = :username LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, username, password_hash, nama_lengkap, role, mata_pelajaran, is_active FROM users WHERE username = :username LIMIT 1');
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch();
 

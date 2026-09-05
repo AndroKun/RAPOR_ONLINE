@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL,
     `nama_lengkap` VARCHAR(100) NOT NULL,
-    `role` ENUM('admin', 'staff') NOT NULL DEFAULT 'staff',
+    `role` ENUM('admin', 'staff', 'guru_tahfidh') NOT NULL DEFAULT 'staff',
+    `mata_pelajaran` VARCHAR(100) NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -66,6 +67,8 @@ CREATE TABLE IF NOT EXISTS `academic_grades` (
     `description` TEXT NULL,
     `semester` TINYINT UNSIGNED NOT NULL COMMENT '1=Ganjil, 2=Genap',
     `school_year` VARCHAR(9) NOT NULL COMMENT '2025/2026',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_academic_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
     UNIQUE KEY `uq_academic_grade` (`student_id`, `subject`, `semester`, `school_year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -79,6 +82,8 @@ CREATE TABLE IF NOT EXISTS `tahfidh_grades` (
     `description` TEXT NULL,
     `semester` TINYINT UNSIGNED NOT NULL,
     `school_year` VARCHAR(9) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_tahfidh_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
     UNIQUE KEY `uq_tahfidh_item` (`student_id`, `memorization`, `semester`, `school_year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

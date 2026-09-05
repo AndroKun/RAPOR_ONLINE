@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../includes/fungsi.php';
 require_once __DIR__ . '/../../includes/auth.php';
 
-require_login();
+require_tahfidh_access();
 
 $studentId = filter_input(INPUT_GET, 'student_id', FILTER_VALIDATE_INT);
 if (!$studentId) {

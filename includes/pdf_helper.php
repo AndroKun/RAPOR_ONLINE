@@ -9,18 +9,18 @@ class RaporPDF extends FPDF
     public function Header()
     {
         // Kop Madrasah
-        $this->SetFont('Helvetica', 'B', 14);
-        $this->SetTextColor(26, 86, 50); // #1a5632
-        $this->Cell(0, 7, "YAYASAN AZ ZUHRI", 0, 1, 'C');
-        $this->SetFont('Helvetica', 'B', 16);
-        $this->Cell(0, 8, "MTS TAHFIDH ROUDLOTUL QUR'AN", 0, 1, 'C');
+        $this->SetFont('Helvetica', 'B', 13);
+        $this->SetTextColor(21, 122, 66); // #157A42
+        $this->Cell(0, 6, "YAYASAN ROUDLOTUL QUR'AN AZ ZUHRI", 0, 1, 'C');
+        $this->SetFont('Helvetica', 'B', 15);
+        $this->Cell(0, 7, "PON.PES & MTS TAHFIDH ROUDLOTUL QUR'AN", 0, 1, 'C');
         $this->SetFont('Helvetica', '', 9);
-        $this->SetTextColor(80, 80, 80);
+        $this->SetTextColor(70, 95, 80);
         $this->Cell(0, 5, "NSM: 121235150000 | NPSN: 69900000 | Akreditasi: B", 0, 1, 'C');
-        $this->Cell(0, 5, "Alamat: Desa Ngampelsari Rt. 03 Rw. 01, Candi, Sidoarjo, Jawa Timur | Telp: 0812-3456-7890", 0, 1, 'C');
+        $this->Cell(0, 5, "Alamat: Desa Ngampelsari Rt. 03 Rw. 01, Candi, Sidoarjo, Jawa Timur | Website: mtstahfidhroudlotulquran.sch.id", 0, 1, 'C');
         
         // Garis Pembatas Kop
-        $this->SetDrawColor(26, 86, 50);
+        $this->SetDrawColor(21, 122, 66);
         $this->SetLineWidth(0.8);
         $this->Line(15, 38, 195, 38);
         $this->SetLineWidth(0.2);

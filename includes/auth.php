@@ -56,3 +56,32 @@ function require_role(string $role): void
         exit;
     }
 }
+
+/**
+ * Guard tahfidh routes: accessible only by Admin or Guru Tahfidh
+ */
+function require_tahfidh_access(): void
+{
+    require_login();
+    $user = current_user();
+    $role = $user['role'] ?? 'staff';
+    if ($role !== 'admin' && $role !== 'guru_tahfidh') {
+        set_flash('danger', 'Akses ditolak: Menu Nilai Tahfidh hanya dapat diakses oleh Guru Tahfidh atau Administrator.');
+        redirect('/staff/dashboard.php');
+    }
+}
+
+/**
+ * Guard academic routes: accessible only by Admin or Guru Mata Pelajaran (staff)
+ */
+function require_academic_access(): void
+{
+    require_login();
+    $user = current_user();
+    $role = $user['role'] ?? 'staff';
+    if ($role !== 'admin' && $role !== 'staff') {
+        set_flash('danger', 'Akses ditolak: Menu Nilai Akademik khusus untuk Guru Mata Pelajaran atau Administrator.');
+        redirect('/staff/dashboard.php');
+    }
+}
+

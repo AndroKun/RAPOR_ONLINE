@@ -111,3 +111,37 @@ function get_flash(): ?array
     }
     return null;
 }
+
+/**
+ * Get all available subjects list dynamically from database
+ */
+function get_all_subjects(PDO $pdo): array
+{
+    try {
+        $stmt = $pdo->query("SELECT nama_mapel FROM subjects ORDER BY urutan ASC, nama_mapel ASC");
+        $list = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if (!empty($list)) {
+            return $list;
+        }
+    } catch (Throwable $e) {
+        // Fallback if table not ready
+    }
+
+    return [
+        'Al-Qur\'an Hadits',
+        'Aqidah Akhlak',
+        'Fiqih',
+        'Sejarah Kebudayaan Islam (SKI)',
+        'Bahasa Arab',
+        'Pendidikan Pancasila',
+        'Bahasa Indonesia',
+        'Matematika',
+        'Ilmu Pengetahuan Alam (IPA)',
+        'Ilmu Pengetahuan Sosial (IPS)',
+        'Bahasa Inggris',
+        'Seni Budaya',
+        'Pendidikan Jasmani (PJOK)',
+        'Prakarya',
+    ];
+}
+

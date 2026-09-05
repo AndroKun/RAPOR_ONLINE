@@ -91,8 +91,10 @@ require_once __DIR__ . '/../includes/header.php';
         ?>
         <?php if ($userRole === 'guru_tahfidh'): ?>
             <a href="<?= e(base_url('/staff/tahfidh/index.php')) ?>" class="btn btn-primary" id="addBtn">📖 Input Nilai Tahfidh</a>
+        <?php elseif ($userRole === 'admin'): ?>
+            <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="btn btn-primary" id="addBtn">+ Tambah Siswa Baru</a>
         <?php else: ?>
-            <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="btn btn-primary" id="addBtn">+ Tambah Data Baru</a>
+            <a href="<?= e(base_url('/staff/nilai/input.php')) ?>" class="btn btn-primary" id="addBtn">✏️ Input Nilai Akademik</a>
         <?php endif; ?>
     </div>
 

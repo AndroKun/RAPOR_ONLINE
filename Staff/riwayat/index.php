@@ -13,119 +13,165 @@ $userRole = $user['role'] ?? 'staff';
 $isAdmin = ($userRole === 'admin');
 $isGuruTahfidh = ($userRole === 'guru_tahfidh');
 $isGuruMapel = ($userRole === 'staff');
+$teacherMapel = trim((string)($user['mata_pelajaran'] ?? ''));
 
 $pageTitle = 'Riwayat Pengisian Nilai - MTs Roudlotul Qur\'an';
-$contentTitle = 'Daftar Riwayat Pengisian Nilai';
-$contentSubtitle = 'Log dan riwayat pembaruan nilai akademik & tahfidh siswa secara real-time.';
 $activeMenu = 'riwayat';
 
-// Filters
-$kategoriFilter = trim($_GET['kategori'] ?? '');
+// Set Titles and Subtitles based on Role
+if ($isAdmin) {
+    $contentTitle = 'Riwayat Pengisian Nilai (Semua Guru & Mapel)';
+    $contentSubtitle = 'Log dan audit riwayat penilaian akademik serta tahfidh siswa oleh seluruh dewan guru.';
+} elseif ($isGuruTahfidh) {
+    $contentTitle = 'Riwayat Pengisian Nilai: Tahfidh Al-Qur\'an';
+    $contentSubtitle = 'Daftar riwayat setoran dan capaian hafalan santri/siswa yang telah Anda nilai.';
+} else {
+    $contentTitle = 'Riwayat Pengisian Nilai: ' . ($teacherMapel ?: 'Mata Pelajaran Anda');
+    $contentSubtitle = 'Daftar riwayat penilaian mata pelajaran ' . ($teacherMapel ?: 'yang Anda ampu') . ' secara terpusat.';
+}
+
+// Filters from Query String
 $kelasFilter = trim($_GET['kelas'] ?? '');
 $semesterFilter = isset($_GET['semester']) && $_GET['semester'] !== '' ? (int)$_GET['semester'] : null;
 $search = trim($_GET['q'] ?? '');
+$kategoriFilter = trim($_GET['kategori'] ?? '');
 
-// Auto default category for specific teachers if not set
-if (!isset($_GET['kategori'])) {
-    if ($isGuruTahfidh) {
-        $kategoriFilter = 'tahfidh';
-    } elseif ($isGuruMapel && !empty($user['mata_pelajaran'])) {
-        $kategoriFilter = 'akademik';
-    }
+// 1. Fetch Stats Count strictly based on Role
+if ($isAdmin) {
+    $stmtCountAcad = $pdo->query("SELECT COUNT(*) FROM academic_grades");
+    $totalAcadEntries = (int)$stmtCountAcad->fetchColumn();
+
+    $stmtCountTahfidh = $pdo->query("SELECT COUNT(*) FROM tahfidh_grades");
+    $totalTahfidhEntries = (int)$stmtCountTahfidh->fetchColumn();
+
+    $totalEntries = $totalAcadEntries + $totalTahfidhEntries;
+} elseif ($isGuruTahfidh) {
+    $stmtCountTahfidh = $pdo->query("SELECT COUNT(*) FROM tahfidh_grades");
+    $totalTahfidhEntries = (int)$stmtCountTahfidh->fetchColumn();
+    $totalAcadEntries = 0;
+    $totalEntries = $totalTahfidhEntries;
+
+    $stmtCountStudent = $pdo->query("SELECT COUNT(DISTINCT student_id) FROM tahfidh_grades");
+    $totalSiswaDinilai = (int)$stmtCountStudent->fetchColumn();
+
+    $stmtAvgScore = $pdo->query("SELECT AVG(score) FROM tahfidh_grades");
+    $avgScore = (float)$stmtAvgScore->fetchColumn();
+} else {
+    // Guru Mapel
+    $stmtCountMapel = $pdo->prepare("SELECT COUNT(*) FROM academic_grades WHERE subject = :sub");
+    $stmtCountMapel->execute(['sub' => $teacherMapel]);
+    $totalAcadEntries = (int)$stmtCountMapel->fetchColumn();
+    $totalTahfidhEntries = 0;
+    $totalEntries = $totalAcadEntries;
+
+    $stmtCountStudent = $pdo->prepare("SELECT COUNT(DISTINCT student_id) FROM academic_grades WHERE subject = :sub");
+    $stmtCountStudent->execute(['sub' => $teacherMapel]);
+    $totalSiswaDinilai = (int)$stmtCountStudent->fetchColumn();
+
+    $stmtAvgScore = $pdo->prepare("SELECT AVG(score) FROM academic_grades WHERE subject = :sub");
+    $stmtAvgScore->execute(['sub' => $teacherMapel]);
+    $avgScore = (float)$stmtAvgScore->fetchColumn();
 }
 
-// 1. Fetch Stats Count
-$stmtCountAcad = $pdo->query("SELECT COUNT(*) FROM academic_grades");
-$totalAcadEntries = (int)$stmtCountAcad->fetchColumn();
-
-$stmtCountTahfidh = $pdo->query("SELECT COUNT(*) FROM tahfidh_grades");
-$totalTahfidhEntries = (int)$stmtCountTahfidh->fetchColumn();
-
-$totalEntries = $totalAcadEntries + $totalTahfidhEntries;
-
-// 2. Build Union Query for History Log
+// 2. Build Query with Strict Role Separation
 $sqlParts = [];
 $params = [];
 
-if ($kategoriFilter === '' || $kategoriFilter === 'akademik') {
-    $acadSql = "
-        SELECT 
-            'akademik' AS tipe,
-            ag.id,
-            ag.student_id,
-            ag.subject AS item_name,
-            ag.score,
-            ag.description,
-            ag.semester,
-            ag.school_year,
-            ag.updated_at,
-            ag.created_at,
-            s.nama AS student_name,
-            s.nisn,
-            s.kelas
-        FROM academic_grades ag
-        JOIN students s ON s.id = ag.student_id
-        WHERE 1=1
-    ";
+// ACADEMIC QUERY SECTION (Only for Admin or Guru Mapel)
+if ($isAdmin || $isGuruMapel) {
+    // If admin chose tahfidh only in filter, skip academic
+    if (!($isAdmin && $kategoriFilter === 'tahfidh')) {
+        $acadSql = "
+            SELECT 
+                'akademik' AS tipe,
+                ag.id,
+                ag.student_id,
+                ag.subject AS item_name,
+                ag.score,
+                ag.description,
+                ag.semester,
+                ag.school_year,
+                ag.updated_at,
+                ag.created_at,
+                s.nama AS student_name,
+                s.nisn,
+                s.kelas
+            FROM academic_grades ag
+            JOIN students s ON s.id = ag.student_id
+            WHERE 1=1
+        ";
 
-    if ($kelasFilter !== '') {
-        $acadSql .= " AND s.kelas = :kelas_a";
-        $params['kelas_a'] = $kelasFilter;
-    }
-    if ($semesterFilter !== null) {
-        $acadSql .= " AND ag.semester = :sem_a";
-        $params['sem_a'] = $semesterFilter;
-    }
-    if ($search !== '') {
-        $acadSql .= " AND (s.nama LIKE :q_a OR s.nisn LIKE :q_a OR ag.subject LIKE :q_a)";
-        $params['q_a'] = "%{$search}%";
-    }
+        // If Guru Mapel, lock strictly to their subject
+        if ($isGuruMapel) {
+            $acadSql .= " AND ag.subject = :lock_subject";
+            $params['lock_subject'] = $teacherMapel;
+        }
 
-    $sqlParts[] = $acadSql;
+        if ($kelasFilter !== '') {
+            $acadSql .= " AND s.kelas = :kelas_a";
+            $params['kelas_a'] = $kelasFilter;
+        }
+        if ($semesterFilter !== null) {
+            $acadSql .= " AND ag.semester = :sem_a";
+            $params['sem_a'] = $semesterFilter;
+        }
+        if ($search !== '') {
+            $acadSql .= " AND (s.nama LIKE :q_a OR s.nisn LIKE :q_a OR ag.subject LIKE :q_a)";
+            $params['q_a'] = "%{$search}%";
+        }
+
+        $sqlParts[] = $acadSql;
+    }
 }
 
-if ($kategoriFilter === '' || $kategoriFilter === 'tahfidh') {
-    $tahfSql = "
-        SELECT 
-            'tahfidh' AS tipe,
-            tg.id,
-            tg.student_id,
-            tg.memorization AS item_name,
-            tg.score,
-            tg.description,
-            tg.semester,
-            tg.school_year,
-            tg.updated_at,
-            tg.created_at,
-            s.nama AS student_name,
-            s.nisn,
-            s.kelas
-        FROM tahfidh_grades tg
-        JOIN students s ON s.id = tg.student_id
-        WHERE 1=1
-    ";
+// TAHFIDH QUERY SECTION (Only for Admin or Guru Tahfidh)
+if ($isAdmin || $isGuruTahfidh) {
+    // If admin chose akademik only in filter, skip tahfidh
+    if (!($isAdmin && $kategoriFilter === 'akademik')) {
+        $tahfSql = "
+            SELECT 
+                'tahfidh' AS tipe,
+                tg.id,
+                tg.student_id,
+                tg.memorization AS item_name,
+                tg.score,
+                tg.description,
+                tg.semester,
+                tg.school_year,
+                tg.updated_at,
+                tg.created_at,
+                s.nama AS student_name,
+                s.nisn,
+                s.kelas
+            FROM tahfidh_grades tg
+            JOIN students s ON s.id = tg.student_id
+            WHERE 1=1
+        ";
 
-    if ($kelasFilter !== '') {
-        $tahfSql .= " AND s.kelas = :kelas_t";
-        $params['kelas_t'] = $kelasFilter;
-    }
-    if ($semesterFilter !== null) {
-        $tahfSql .= " AND tg.semester = :sem_t";
-        $params['sem_t'] = $semesterFilter;
-    }
-    if ($search !== '') {
-        $tahfSql .= " AND (s.nama LIKE :q_t OR s.nisn LIKE :q_t OR tg.memorization LIKE :q_t)";
-        $params['q_t'] = "%{$search}%";
-    }
+        if ($kelasFilter !== '') {
+            $tahfSql .= " AND s.kelas = :kelas_t";
+            $params['kelas_t'] = $kelasFilter;
+        }
+        if ($semesterFilter !== null) {
+            $tahfSql .= " AND tg.semester = :sem_t";
+            $params['sem_t'] = $semesterFilter;
+        }
+        if ($search !== '') {
+            $tahfSql .= " AND (s.nama LIKE :q_t OR s.nisn LIKE :q_t OR tg.memorization LIKE :q_t)";
+            $params['q_t'] = "%{$search}%";
+        }
 
-    $sqlParts[] = $tahfSql;
+        $sqlParts[] = $tahfSql;
+    }
 }
 
-$fullSql = implode(" UNION ALL ", $sqlParts) . " ORDER BY updated_at DESC LIMIT 150";
-
-$stmtHistory = $pdo->prepare($fullSql);
-$stmtHistory->execute($params);
-$historyRows = $stmtHistory->fetchAll();
+$historyRows = [];
+if (!empty($sqlParts)) {
+    $fullSql = implode(" UNION ALL ", $sqlParts) . " ORDER BY updated_at DESC LIMIT 150";
+    $stmtHistory = $pdo->prepare($fullSql);
+    $stmtHistory->execute($params);
+    $historyRows = $stmtHistory->fetchAll();
+}
 
 // List kelas unik
 $stmtKelas = $pdo->query("SELECT DISTINCT kelas FROM students ORDER BY kelas ASC");
@@ -134,28 +180,72 @@ $kelasList = $stmtKelas->fetchAll(PDO::FETCH_COLUMN);
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
-<!-- Stat Cards -->
+<!-- Stat Cards Tailored to Role -->
 <div class="stats">
-    <div class="stat-card">
-        <div class="label">Total Riwayat Penilaian</div>
-        <div class="value"><?= number_format($totalEntries) ?> Entri</div>
-    </div>
-    <div class="stat-card">
-        <div class="label">Penilaian Mapel Akademik</div>
-        <div class="value"><?= number_format($totalAcadEntries) ?> Nilai</div>
-    </div>
-    <div class="stat-card">
-        <div class="label">Penilaian Tahfidh Al-Qur'an</div>
-        <div class="value"><?= number_format($totalTahfidhEntries) ?> Capaian</div>
-    </div>
+    <?php if ($isAdmin): ?>
+        <div class="stat-card">
+            <div class="label">Total Seluruh Riwayat</div>
+            <div class="value"><?= number_format($totalEntries) ?> Entri</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Riwayat Mapel Akademik</div>
+            <div class="value"><?= number_format($totalAcadEntries) ?> Nilai</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Riwayat Tahfidh Al-Qur'an</div>
+            <div class="value"><?= number_format($totalTahfidhEntries) ?> Capaian</div>
+        </div>
+    <?php elseif ($isGuruTahfidh): ?>
+        <div class="stat-card">
+            <div class="label">Total Entri Setoran Tahfidh</div>
+            <div class="value"><?= number_format($totalTahfidhEntries) ?> Capaian</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Santri/Siswa Dinilai</div>
+            <div class="value"><?= number_format($totalSiswaDinilai) ?> Orang</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Rata-Rata Nilai Tahfidh</div>
+            <div class="value"><?= number_format($avgScore, 1) ?></div>
+        </div>
+    <?php else: ?>
+        <div class="stat-card">
+            <div class="label">Total Entri Nilai (<?= e($teacherMapel) ?>)</div>
+            <div class="value"><?= number_format($totalAcadEntries) ?> Nilai</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Siswa Telah Dinilai</div>
+            <div class="value"><?= number_format($totalSiswaDinilai) ?> Siswa</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Rata-Rata Nilai Mapel</div>
+            <div class="value"><?= number_format($avgScore, 1) ?></div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Panel Card Riwayat -->
 <div class="panel-card">
     <div class="panel-head">
         <div>
-            <h2>Log Aktivitas Pengisian Nilai</h2>
-            <p class="section-hint" style="margin: 2px 0 0;">Menampilkan 150 transaksi pembaruan nilai terkini yang tersimpan di sistem.</p>
+            <h2>
+                <?php if ($isAdmin): ?>
+                    Log Aktivitas Pengisian Nilai
+                <?php elseif ($isGuruTahfidh): ?>
+                    Log Riwayat Nilai Tahfidh
+                <?php else: ?>
+                    Log Riwayat Nilai: <?= e($teacherMapel) ?>
+                <?php endif; ?>
+            </h2>
+            <p class="section-hint" style="margin: 2px 0 0;">
+                <?php if ($isAdmin): ?>
+                    Menampilkan 150 transaksi pembaruan nilai terkini dari seluruh mata pelajaran dan tahfidh.
+                <?php elseif ($isGuruTahfidh): ?>
+                    Menampilkan riwayat penilaian setoran tahfidh Al-Qur'an siswa yang telah diinput.
+                <?php else: ?>
+                    Menampilkan riwayat penilaian khusus mata pelajaran <strong><?= e($teacherMapel) ?></strong>.
+                <?php endif; ?>
+            </p>
         </div>
         <div style="display: flex; gap: 8px;">
             <a href="<?= e(base_url('/staff/rapor/index.php')) ?>" class="btn btn-gold btn-sm">🖨 Buka Manajemen Cetak PDF</a>
@@ -165,16 +255,26 @@ require_once __DIR__ . '/../../includes/header.php';
     <!-- Filter Form -->
     <form method="GET" action="" class="filters" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
         <div style="flex: 1; min-width: 200px;">
-            <input type="text" name="q" value="<?= e($search) ?>" placeholder="🔍 Cari nama siswa, NISN, atau mapel...">
+            <input type="text" name="q" value="<?= e($search) ?>" placeholder="🔍 Cari nama siswa atau NISN...">
         </div>
 
-        <div style="min-width: 170px;">
-            <select name="kategori" onchange="this.form.submit()">
-                <option value="">Semua Kategori (Akademik &amp; Tahfidh)</option>
-                <option value="akademik" <?= $kategoriFilter === 'akademik' ? 'selected' : '' ?>>📘 Nilai Akademik Saja</option>
-                <option value="tahfidh" <?= $kategoriFilter === 'tahfidh' ? 'selected' : '' ?>>📖 Nilai Tahfidh Saja</option>
-            </select>
-        </div>
+        <?php if ($isAdmin): ?>
+            <div style="min-width: 170px;">
+                <select name="kategori" onchange="this.form.submit()">
+                    <option value="">Semua Kategori (Akademik &amp; Tahfidh)</option>
+                    <option value="akademik" <?= $kategoriFilter === 'akademik' ? 'selected' : '' ?>>📘 Nilai Akademik Saja</option>
+                    <option value="tahfidh" <?= $kategoriFilter === 'tahfidh' ? 'selected' : '' ?>>📖 Nilai Tahfidh Saja</option>
+                </select>
+            </div>
+        <?php elseif ($isGuruMapel): ?>
+            <div style="padding: 8px 14px; background: #FFFFFF; border: 1.5px solid var(--green-700); border-radius: 8px; font-weight: 700; color: var(--green-900); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                <span>📘 <?= e($teacherMapel) ?></span>
+            </div>
+        <?php elseif ($isGuruTahfidh): ?>
+            <div style="padding: 8px 14px; background: #FFFFFF; border: 1.5px solid var(--green-700); border-radius: 8px; font-weight: 700; color: var(--green-900); font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                <span>📖 Tahfidh Al-Qur'an</span>
+            </div>
+        <?php endif; ?>
 
         <div style="min-width: 140px;">
             <select name="kelas" onchange="this.form.submit()">
@@ -194,7 +294,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
 
         <button type="submit" class="btn btn-primary" style="padding: 9px 18px;">Filter</button>
-        <?php if ($search !== '' || $kategoriFilter !== '' || $kelasFilter !== '' || $semesterFilter !== null): ?>
+        <?php if ($search !== '' || $kelasFilter !== '' || $semesterFilter !== null || ($isAdmin && $kategoriFilter !== '')): ?>
             <a href="<?= e(base_url('/staff/riwayat/index.php')) ?>" class="btn btn-ghost" style="padding: 9px 14px;">Reset</a>
         <?php endif; ?>
     </form>
@@ -218,7 +318,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <?php if (empty($historyRows)): ?>
                     <tr>
                         <td colspan="9" style="text-align: center; padding: 35px; color: var(--ink-soft);">
-                            Tidak ada riwayat pengisian nilai yang cocok dengan filter yang dipilih.
+                            Tidak ada riwayat pengisian nilai yang sesuai dengan kriteria Anda.
                         </td>
                     </tr>
                 <?php else: ?>

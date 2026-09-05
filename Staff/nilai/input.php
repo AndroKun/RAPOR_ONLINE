@@ -108,9 +108,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         $stmtUpsert = $pdo->prepare("
-            INSERT INTO academic_grades (student_id, subject, score, description, semester, school_year) 
-            VALUES (:sid, :subj, :score, :desc, :sem, :sy)
-            ON DUPLICATE KEY UPDATE score = VALUES(score), description = VALUES(description)
+            INSERT INTO academic_grades (student_id, subject, score, description, semester, school_year, created_at, updated_at) 
+            VALUES (:sid, :subj, :score, :desc, :sem, :sy, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE score = VALUES(score), description = VALUES(description), updated_at = NOW()
         ");
 
         $stmtDelete = $pdo->prepare("

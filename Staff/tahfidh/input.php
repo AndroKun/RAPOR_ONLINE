@@ -52,8 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtDel = $pdo->prepare("DELETE FROM tahfidh_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
         $stmtDel->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
 
-        $stmtInsert = $pdo->prepare("INSERT INTO tahfidh_grades (student_id, memorization, score, description, semester, school_year) 
-                                     VALUES (:sid, :mem, :score, :desc, :sem, :sy)");
+        $stmtInsert = $pdo->prepare("INSERT INTO tahfidh_grades (student_id, memorization, score, description, semester, school_year, created_at, updated_at) 
+                                     VALUES (:sid, :mem, :score, :desc, :sem, :sy, NOW(), NOW())");
 
         $insertedCount = 0;
         for ($i = 0; $i < count($memorizations); $i++) {

@@ -181,7 +181,7 @@ if ($isAdmin || $isGuruTahfidh) {
 
 $historyRows = [];
 if (!empty($sqlParts)) {
-    $fullSql = implode(" UNION ALL ", $sqlParts) . " ORDER BY updated_at DESC LIMIT 150";
+    $fullSql = implode(" UNION ALL ", $sqlParts) . " ORDER BY COALESCE(updated_at, created_at) DESC, id DESC LIMIT 200";
     $stmtHistory = $pdo->prepare($fullSql);
     $stmtHistory->execute($params);
     $historyRows = $stmtHistory->fetchAll();

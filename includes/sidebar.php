@@ -14,17 +14,9 @@ $isGuruMapel = ($userRole === 'staff');
 ?>
 <aside class="sidebar" id="sidebar">
     <div class="brand">
-        <div style="display: flex; align-items: center; gap: 11px;">
-            <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.15); border: 1.5px solid var(--gold-500); display: flex; align-items: center; justify-content: center; color: var(--gold-500); font-size: 16px; flex-shrink: 0;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/>
-                    <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <div>
-                <div class="brand-name" style="font-size: 14.5px; font-weight: 800; color: #FFFFFF; line-height: 1.25;">MTs Tahfidh<br>Roudlotul Qur'an</div>
-                <div class="brand-sub" style="font-size: 11px; color: #A7E0BE; margin-top: 2px;">Portal Staf &amp; Guru</div>
-            </div>
+        <div>
+            <div class="brand-name">Yayasan Roudlotul Qur'an Az Zuhri</div>
+            <div class="brand-sub">Pon.Pes &amp; MTs Tahfidh Roudlotul Qur'an</div>
         </div>
         <button class="sidebar-close" id="sidebarClose" aria-label="Tutup menu">&times;</button>
     </div>

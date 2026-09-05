@@ -32,23 +32,9 @@ $contentSubtitle = 'Penilaian setoran hafalan, fashahah, kelancaran, dan tajwid 
 $activeMenu = 'tahfidh';
 
 // Ambil nilai tahfidh yang sudah tersimpan
-$stmtTahfidh = $pdo->prepare("SELECT memorization, score, description FROM tahfidh_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
+$stmtTahfidh = $pdo->prepare("SELECT memorization, score, description FROM tahfidh_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY id ASC");
 $stmtTahfidh->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
 $savedTahfidh = $stmtTahfidh->fetchAll();
-
-// Target hafalan dinamis dari master kategori tahfidh di database
-$masterTargets = get_all_tahfidh_categories($pdo);
-
-$existingMap = [];
-foreach ($savedTahfidh as $t) {
-    $existingMap[$t['memorization']] = [
-        'score' => (float)$t['score'],
-        'description' => $t['description'] ?? '',
-    ];
-}
-
-// Gabungkan master targets dan targets yang sudah tersimpan
-$combinedTargets = array_values(array_unique(array_merge($masterTargets, array_keys($existingMap))));
 
 $errors = [];
 
@@ -157,43 +143,63 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="panel-head">
         <div>
             <h2>Formulir Capaian Tahfidh Al-Qur'an</h2>
-            <p class="section-hint" style="margin: 2px 0 0;">Isi nilai (0–100) dan catatan fashahah/tajwid pada target hafalan di bawah ini.</p>
+            <p class="section-hint" style="margin: 2px 0 0;">Klik tombol <strong>+ Tambah Baris Penilaian</strong> di sebelah kanan untuk menambahkan baris target hafalan siswa.</p>
         </div>
-        <button type="submit" class="btn btn-primary">
-            💾 Simpan Nilai Tahfidh
+        <button type="button" class="btn btn-primary" id="btnAddTahfidhRow" style="display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(21,122,66,0.25);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Tambah Baris Penilaian</span>
         </button>
     </div>
 
     <div class="table-responsive">
-        <table class="responsive-stack">
+        <table class="responsive-stack" id="tableTahfidh">
             <thead>
                 <tr>
                     <th style="width: 45px;" class="num">No</th>
-                    <th style="min-width: 280px;">Target Hafalan / Surat / Juz</th>
-                    <th style="width: 120px;" class="num">Nilai (0–100)</th>
+                    <th style="min-width: 260px;">Target Hafalan / Surat / Juz</th>
+                    <th style="width: 130px;" class="num">Nilai (0–100)</th>
                     <th>Catatan Fashahah, Kelancaran &amp; Tajwid</th>
+                    <th style="width: 60px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="tahfidhRowsBody">
+                <tr id="emptyRowPlaceholder" style="<?= !empty($savedTahfidh) ? 'display: none;' : '' ?>">
+                    <td colspan="5" style="text-align: center; padding: 36px 20px; color: var(--ink-soft); background: #fafdfb; border: 1.5px dashed var(--line); border-radius: 8px;">
+                        <div style="font-size: 28px; margin-bottom: 8px;">📖</div>
+                        <div style="font-weight: 700; color: var(--green-900); font-size: 14.5px;">Belum ada target penilaian hafalan</div>
+                        <div style="font-size: 13px; margin-top: 4px; color: var(--ink-soft);">
+                            Klik tombol hijau <strong>"+ Tambah Baris Penilaian"</strong> di pojok kanan atas untuk memasukkan penilaian siswa.
+                        </div>
+                    </td>
+                </tr>
+
                 <?php 
                 $no = 1;
-                foreach ($combinedTargets as $target): 
-                    $valScore = isset($existingMap[$target]) ? (string)$existingMap[$target]['score'] : '';
-                    $valDesc = isset($existingMap[$target]) ? $existingMap[$target]['description'] : '';
+                foreach ($savedTahfidh as $row): 
+                    $valMem = (string)$row['memorization'];
+                    $valScore = (string)$row['score'];
+                    $valDesc = (string)($row['description'] ?? '');
                 ?>
-                    <tr>
-                        <td class="num" data-label="No"><?= $no++ ?></td>
+                    <tr class="tahfidh-data-row">
+                        <td class="num row-num" data-label="No"><?= $no++ ?></td>
                         <td data-label="Target Hafalan">
-                            <input type="text" name="memorizations[]" value="<?= e($target) ?>" 
+                            <input type="text" name="memorizations[]" value="<?= e($valMem) ?>" placeholder="Contoh: Juz 30 / Surat An-Naba' / Fashahah" required
                                    style="width: 100%; padding: 8px 12px; font-weight: 700; color: var(--green-900); border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
                         </td>
                         <td class="num" data-label="Nilai (0-100)">
-                            <input type="number" step="0.1" min="0" max="100" name="scores[]" value="<?= e($valScore) ?>" placeholder="0 - 100" 
-                                   style="width: 100px; padding: 8px 12px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
+                            <input type="number" step="0.1" min="0" max="100" name="scores[]" value="<?= e($valScore) ?>" placeholder="0 - 100" required
+                                   style="width: 110px; padding: 8px 12px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
                         </td>
                         <td data-label="Catatan Guru">
                             <input type="text" name="descriptions[]" value="<?= e($valDesc) ?>" placeholder="Contoh: Mutqin, fashahah makhraj baik, tartil..." 
                                    style="width: 100%; padding: 8px 12px; font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+                        </td>
+                        <td data-label="Aksi" style="text-align: center;">
+                            <button type="button" class="btn btn-delete btn-sm btn-remove-row" title="Hapus baris ini" style="padding: 6px 10px; font-size: 12px;">
+                                🗑
+                            </button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -208,5 +214,93 @@ require_once __DIR__ . '/../../includes/header.php';
         </button>
     </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tbody = document.getElementById('tahfidhRowsBody');
+    const btnAdd = document.getElementById('btnAddTahfidhRow');
+    const emptyPlaceholder = document.getElementById('emptyRowPlaceholder');
+
+    function updateRowNumbers() {
+        const rows = tbody.querySelectorAll('tr.tahfidh-data-row');
+        if (rows.length === 0) {
+            if (emptyPlaceholder) emptyPlaceholder.style.display = '';
+        } else {
+            if (emptyPlaceholder) emptyPlaceholder.style.display = 'none';
+            rows.forEach((row, index) => {
+                const numCell = row.querySelector('.row-num');
+                if (numCell) numCell.textContent = index + 1;
+            });
+        }
+    }
+
+    function createRow(memorization = '', score = '', description = '') {
+        const tr = document.createElement('tr');
+        tr.className = 'tahfidh-data-row';
+        tr.innerHTML = `
+            <td class="num row-num" data-label="No">1</td>
+            <td data-label="Target Hafalan">
+                <input type="text" name="memorizations[]" value="${escapeHtml(memorization)}" placeholder="Contoh: Juz 30 / Surat An-Naba' / Fashahah" required
+                       style="width: 100%; padding: 8px 12px; font-weight: 700; color: var(--green-900); border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+            </td>
+            <td class="num" data-label="Nilai (0-100)">
+                <input type="number" step="0.1" min="0" max="100" name="scores[]" value="${escapeHtml(score)}" placeholder="0 - 100" required
+                       style="width: 110px; padding: 8px 12px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
+            </td>
+            <td data-label="Catatan Guru">
+                <input type="text" name="descriptions[]" value="${escapeHtml(description)}" placeholder="Contoh: Mutqin, fashahah makhraj baik, tartil..." 
+                       style="width: 100%; padding: 8px 12px; font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+            </td>
+            <td data-label="Aksi" style="text-align: center;">
+                <button type="button" class="btn btn-delete btn-sm btn-remove-row" title="Hapus baris ini" style="padding: 6px 10px; font-size: 12px;">
+                    🗑
+                </button>
+            </td>
+        `;
+
+        // Attach remove handler
+        tr.querySelector('.btn-remove-row').addEventListener('click', () => {
+            tr.remove();
+            updateRowNumbers();
+        });
+
+        tbody.appendChild(tr);
+        updateRowNumbers();
+
+        // Focus on the newly created memorization input
+        const memInput = tr.querySelector('input[name="memorizations[]"]');
+        if (memInput) memInput.focus();
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    if (btnAdd) {
+        btnAdd.addEventListener('click', () => {
+            createRow();
+        });
+    }
+
+    // Attach remove handlers to pre-rendered rows
+    tbody.querySelectorAll('.btn-remove-row').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tr = e.target.closest('tr.tahfidh-data-row');
+            if (tr) {
+                tr.remove();
+                updateRowNumbers();
+            }
+        });
+    });
+
+    updateRowNumbers();
+});
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

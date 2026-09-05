@@ -123,7 +123,7 @@ if ($isAdmin || $isGuruMapel) {
             $params['sem_a'] = $semesterFilter;
         }
         if ($search !== '') {
-            $acadSql .= " AND (s.nama LIKE :q_a OR s.nisn LIKE :q_a OR ag.subject LIKE :q_a)";
+            $acadSql .= " AND (s.nama LIKE :q_a OR s.nisn LIKE :q_a)";
             $params['q_a'] = "%{$search}%";
         }
 
@@ -171,7 +171,7 @@ if ($isAdmin || $isGuruTahfidh) {
             $params['sem_t'] = $semesterFilter;
         }
         if ($search !== '') {
-            $tahfSql .= " AND (s.nama LIKE :q_t OR s.nisn LIKE :q_t OR tg.memorization LIKE :q_t)";
+            $tahfSql .= " AND (s.nama LIKE :q_t OR s.nisn LIKE :q_t)";
             $params['q_t'] = "%{$search}%";
         }
 
@@ -269,7 +269,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <!-- Filter Form -->
     <form method="GET" action="" class="filters" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
         <div style="flex: 1; min-width: 200px;">
-            <input type="text" name="q" value="<?= e($search) ?>" placeholder="🔍 Cari nama siswa atau NISN...">
+            <input type="text" id="liveSearchRiwayat" name="q" value="<?= e($search) ?>" placeholder="🔍 Ketik nama siswa atau NISN (pencarian otomatis)..." autofocus>
         </div>
 
         <?php if ($isAdmin): ?>
@@ -349,7 +349,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
                         $waktuFormatted = !empty($row['updated_at']) ? date('d/m/Y H:i', strtotime($row['updated_at'])) : '-';
                     ?>
-                        <tr>
+                        <tr data-student-search="<?= e(strtolower($row['student_name'] . ' ' . $row['nisn'])) ?>">
                             <td data-label="Waktu Update">
                                 <span style="font-size: 12.5px; font-weight: 600; color: var(--ink-base);"><?= e($waktuFormatted) ?></span>
                             </td>
@@ -397,5 +397,22 @@ require_once __DIR__ . '/../../includes/header.php';
         </table>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('liveSearchRiwayat');
+    const tableRows = Array.from(document.querySelectorAll('#riwayatTable tbody tr[data-student-search]'));
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.trim().toLowerCase();
+            tableRows.forEach(row => {
+                const text = row.dataset.studentSearch || '';
+                row.style.display = (!query || text.includes(query)) ? '' : 'none';
+            });
+        });
+    }
+});
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

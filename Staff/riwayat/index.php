@@ -108,8 +108,15 @@ if ($isAdmin || $isGuruMapel) {
         }
 
         if ($kelasFilter !== '') {
-            $acadSql .= " AND s.kelas = :kelas_a";
-            $params['kelas_a'] = $kelasFilter;
+            $acadSql .= " AND (s.kelas = :kelas_a1 OR s.kelas = :kelas_a2)";
+            $kMapA = match($kelasFilter) {
+                'VII', '7' => ['VII', '7'],
+                'VIII', '8' => ['VIII', '8'],
+                'IX', '9' => ['IX', '9'],
+                default => [$kelasFilter, $kelasFilter]
+            };
+            $params['kelas_a1'] = $kMapA[0];
+            $params['kelas_a2'] = $kMapA[1];
         }
         if ($semesterFilter !== null) {
             $acadSql .= " AND ag.semester = :sem_a";
@@ -149,8 +156,15 @@ if ($isAdmin || $isGuruTahfidh) {
         ";
 
         if ($kelasFilter !== '') {
-            $tahfSql .= " AND s.kelas = :kelas_t";
-            $params['kelas_t'] = $kelasFilter;
+            $tahfSql .= " AND (s.kelas = :kelas_t1 OR s.kelas = :kelas_t2)";
+            $kMapT = match($kelasFilter) {
+                'VII', '7' => ['VII', '7'],
+                'VIII', '8' => ['VIII', '8'],
+                'IX', '9' => ['IX', '9'],
+                default => [$kelasFilter, $kelasFilter]
+            };
+            $params['kelas_t1'] = $kMapT[0];
+            $params['kelas_t2'] = $kMapT[1];
         }
         if ($semesterFilter !== null) {
             $tahfSql .= " AND tg.semester = :sem_t";
@@ -276,12 +290,12 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         <?php endif; ?>
 
-        <div style="min-width: 140px;">
+        <div style="min-width: 150px;">
             <select name="kelas" onchange="this.form.submit()">
-                <option value="">Semua Kelas</option>
-                <?php foreach ($kelasList as $kls): ?>
-                    <option value="<?= e($kls) ?>" <?= $kelasFilter === $kls ? 'selected' : '' ?>>Kelas <?= e($kls) ?></option>
-                <?php endforeach; ?>
+                <option value="">Semua Kelas (7, 8, 9)</option>
+                <option value="VII" <?= in_array($kelasFilter, ['VII', '7']) ? 'selected' : '' ?>>Kelas 7 (VII)</option>
+                <option value="VIII" <?= in_array($kelasFilter, ['VIII', '8']) ? 'selected' : '' ?>>Kelas 8 (VIII)</option>
+                <option value="IX" <?= in_array($kelasFilter, ['IX', '9']) ? 'selected' : '' ?>>Kelas 9 (IX)</option>
             </select>
         </div>
 

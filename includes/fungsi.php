@@ -145,3 +145,28 @@ function get_all_subjects(PDO $pdo): array
     ];
 }
 
+/**
+ * Get all available Tahfidh categories/targets list dynamically from database
+ */
+function get_all_tahfidh_categories(PDO $pdo): array
+{
+    try {
+        $stmt = $pdo->query("SELECT nama_kategori FROM tahfidh_categories ORDER BY urutan ASC, nama_kategori ASC");
+        $list = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if (!empty($list)) {
+            return $list;
+        }
+    } catch (Throwable $e) {
+        // Fallback if table not ready
+    }
+
+    return [
+        'Juz 30 (An-Naba s.d An-Nas)',
+        'Juz 29 (Al-Mulk s.d Al-Mursalat)',
+        'Surat Pilihan (Surat Yasin & Al-Waqi\'ah)',
+        'Doa Harian & Dzikir Pagi Petang',
+        'Hadits-hadits Pilihan Arbain'
+    ];
+}
+
+

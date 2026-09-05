@@ -55,8 +55,8 @@ foreach ($studentRows as $st) {
 
 $progressPercent = $totalSiswa > 0 ? (int)round(($siswaLengkap / $totalSiswa) * 100) : 0;
 
-// List Kelas unik
-$kelasList = array_values(array_unique(array_filter(array_column($studentRows, 'kelas'))));
+// List Kelas unik (termasuk kelas 7, 8, 9)
+$kelasList = array_values(array_unique(array_merge(['VII', 'VIII', 'IX'], array_filter(array_column($studentRows, 'kelas')))));
 sort($kelasList);
 
 require_once __DIR__ . '/../includes/header.php';

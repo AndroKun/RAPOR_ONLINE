@@ -28,6 +28,7 @@ $schoolYear = trim($_GET['school_year'] ?? '2025/2026');
 
 $pageTitle = 'Input Nilai Tahfidh - ' . $student['nama'];
 $contentTitle = 'Input Nilai Tahfidh Al-Qur\'an';
+$contentSubtitle = 'Penilaian setoran hafalan, fashahah, kelancaran, dan tajwid santri.';
 $activeMenu = 'tahfidh';
 
 // Ambil nilai tahfidh yang sudah tersimpan
@@ -35,14 +36,8 @@ $stmtTahfidh = $pdo->prepare("SELECT memorization, score, description FROM tahfi
 $stmtTahfidh->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
 $savedTahfidh = $stmtTahfidh->fetchAll();
 
-// Target hafalan default untuk form
-$defaultTargets = [
-    'Juz 30 (An-Naba s.d An-Nas)',
-    'Juz 29 (Al-Mulk s.d Al-Mursalat)',
-    'Surat Pilihan (Surat Yasin & Al-Waqi\'ah)',
-    'Doa Harian & Dzikir Pagi Petang',
-    'Hadits-hadits Pilihan Arbain'
-];
+// Target hafalan dinamis dari master kategori tahfidh di database
+$masterTargets = get_all_tahfidh_categories($pdo);
 
 $existingMap = [];
 foreach ($savedTahfidh as $t) {
@@ -51,6 +46,9 @@ foreach ($savedTahfidh as $t) {
         'description' => $t['description'] ?? '',
     ];
 }
+
+// Gabungkan master targets dan targets yang sudah tersimpan
+$combinedTargets = array_values(array_unique(array_merge($masterTargets, array_keys($existingMap))));
 
 $errors = [];
 
@@ -120,67 +118,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
-<div class="data-section">
-    <div class="data-header">
-        <div>
-            <h2>Penilaian Tahfidh: <?= e($student['nama']) ?></h2>
-            <p style="margin:4px 0 0 0; color:#666; font-size:13.5px;">NISN: <?= e($student['nisn']) ?> | Kelas: <?= e($student['kelas']) ?> | Semester: <?= $semester === 1 ? '1 (Ganjil)' : '2 (Genap)' ?> <?= e($schoolYear) ?></p>
+<!-- Info Siswa Card -->
+<div class="picker-card" style="margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 14px; flex: 1;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: var(--green-100); color: var(--green-800); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+            📖
         </div>
-        <a href="<?= e(base_url('/staff/tahfidh/index.php?semester=' . $semester . '&school_year=' . urlencode($schoolYear))) ?>" class="btn btn-secondary">Kembali</a>
+        <div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--green-900);"><?= e($student['nama']) ?></div>
+            <div style="font-size: 13px; color: var(--ink-soft); margin-top: 2px;">
+                Kelas: <b><?= e($student['kelas']) ?></b> &nbsp;·&nbsp; 
+                NISN: <b><?= e($student['nisn']) ?></b> &nbsp;·&nbsp; 
+                Semester: <b><?= $semester === 1 ? '1 (Ganjil)' : '2 (Genap)' ?> <?= e($schoolYear) ?></b>
+            </div>
+        </div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="<?= e(base_url('/staff/tahfidh/index.php?semester=' . $semester . '&school_year=' . urlencode($schoolYear))) ?>" class="btn btn-ghost btn-sm">
+            ← Kembali ke Daftar
+        </a>
+    </div>
+</div>
+
+<?php if (!empty($errors)): ?>
+    <div class="alert alert-danger">
+        <ul style="margin:0; padding-left:20px;">
+            <?php foreach ($errors as $err): ?>
+                <li><?= e($err) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+<?php endif; ?>
+
+<!-- Form Penilaian Tahfidh -->
+<form method="POST" action="" class="card" id="formTahfidh">
+    <?= csrf_field() ?>
+
+    <div class="panel-head">
+        <div>
+            <h2>Formulir Capaian Tahfidh Al-Qur'an</h2>
+            <p class="section-hint" style="margin: 2px 0 0;">Isi nilai (0–100) dan catatan fashahah/tajwid pada target hafalan di bawah ini.</p>
+        </div>
+        <button type="submit" class="btn btn-primary">
+            💾 Simpan Nilai Tahfidh
+        </button>
     </div>
 
-    <?php if (!empty($errors)): ?>
-        <div class="alert alert-danger">
-            <ul style="margin:0; padding-left:20px;">
-                <?php foreach ($errors as $err): ?>
-                    <li><?= e($err) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    <?php endif; ?>
-
-    <form method="POST" action="" class="form-container" style="box-shadow:none; padding:10px 0;">
-        <?= csrf_field() ?>
-
-        <div class="table-responsive">
-            <table>
-                <thead>
+    <div class="table-responsive">
+        <table class="responsive-stack">
+            <thead>
+                <tr>
+                    <th style="width: 45px;" class="num">No</th>
+                    <th style="min-width: 280px;">Target Hafalan / Surat / Juz</th>
+                    <th style="width: 120px;" class="num">Nilai (0–100)</th>
+                    <th>Catatan Fashahah, Kelancaran &amp; Tajwid</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php 
+                $no = 1;
+                foreach ($combinedTargets as $target): 
+                    $valScore = isset($existingMap[$target]) ? (string)$existingMap[$target]['score'] : '';
+                    $valDesc = isset($existingMap[$target]) ? $existingMap[$target]['description'] : '';
+                ?>
                     <tr>
-                        <th style="width: 40px;">No</th>
-                        <th style="width: 320px;">Target Hafalan / Surat / Juz</th>
-                        <th style="width: 120px;">Nilai (0 - 100)</th>
-                        <th>Catatan Fashahah, Kelancaran & Tajwid</th>
+                        <td class="num" data-label="No"><?= $no++ ?></td>
+                        <td data-label="Target Hafalan">
+                            <input type="text" name="memorizations[]" value="<?= e($target) ?>" 
+                                   style="width: 100%; padding: 8px 12px; font-weight: 700; color: var(--green-900); border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+                        </td>
+                        <td class="num" data-label="Nilai (0-100)">
+                            <input type="number" step="0.1" min="0" max="100" name="scores[]" value="<?= e($valScore) ?>" placeholder="0 - 100" 
+                                   style="width: 100px; padding: 8px 12px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
+                        </td>
+                        <td data-label="Catatan Guru">
+                            <input type="text" name="descriptions[]" value="<?= e($valDesc) ?>" placeholder="Contoh: Mutqin, fashahah makhraj baik, tartil..." 
+                                   style="width: 100%; padding: 8px 12px; font-size: 13.5px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $no = 1;
-                    foreach ($defaultTargets as $target): 
-                        $valScore = isset($existingMap[$target]) ? (string)$existingMap[$target]['score'] : '';
-                        $valDesc = isset($existingMap[$target]) ? $existingMap[$target]['description'] : '';
-                    ?>
-                        <tr>
-                            <td><?= $no++ ?></td>
-                            <td>
-                                <input type="text" name="memorizations[]" value="<?= e($target) ?>" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:5px; font-weight:600;">
-                            </td>
-                            <td>
-                                <input type="number" step="0.01" min="0" max="100" name="scores[]" value="<?= e($valScore) ?>" placeholder="0.00" style="width:100px; padding:8px 10px; border:1px solid #cbd5e1; border-radius:5px; font-size:14px; text-align:center;">
-                            </td>
-                            <td>
-                                <input type="text" name="descriptions[]" value="<?= e($valDesc) ?>" placeholder="Contoh: Mutqin, makhraj fasih, tajwid tartil..." style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:5px; font-size:13.5px;">
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 
-        <div class="form-actions" style="margin-top: 25px;">
-            <a href="<?= e(base_url('/staff/tahfidh/index.php')) ?>" class="btn-cancel">Batal</a>
-            <button type="submit" class="btn-save" style="background:#27ae60;">Simpan Nilai Tahfidh</button>
-        </div>
-    </form>
-</div>
+    <div class="form-actions" style="margin-top: 24px;">
+        <a href="<?= e(base_url('/staff/tahfidh/index.php?semester=' . $semester . '&school_year=' . urlencode($schoolYear))) ?>" class="btn btn-ghost">Batal</a>
+        <button type="submit" class="btn btn-primary" style="padding: 12px 28px; font-size: 14.5px;">
+            💾 Simpan Nilai Tahfidh Siswa
+        </button>
+    </div>
+</form>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

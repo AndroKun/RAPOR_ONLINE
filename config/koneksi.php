@@ -79,6 +79,31 @@ try {
                 $stmtInsertSubj->execute($item);
             }
         }
+        // Ensure tahfidh_categories table exists and is populated
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tahfidh_categories` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `nama_kategori` VARCHAR(150) NOT NULL UNIQUE,
+                `kelompok` VARCHAR(100) NOT NULL DEFAULT 'Hafalan Al-Qur\'an',
+                `urutan` INT NOT NULL DEFAULT 0,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $stmtCheckTahf = $pdo->query("SELECT COUNT(*) FROM `tahfidh_categories`");
+        if ((int)$stmtCheckTahf->fetchColumn() === 0) {
+            $defaultTahfList = [
+                ['Juz 30 (An-Naba s.d An-Nas)', 'Hafalan Juz', 1],
+                ['Juz 29 (Al-Mulk s.d Al-Mursalat)', 'Hafalan Juz', 2],
+                ['Surat Pilihan (Surat Yasin & Al-Waqi\'ah)', 'Surat Pilihan', 3],
+                ['Doa Harian & Dzikir Pagi Petang', 'Doa & Dzikir', 4],
+                ['Hadits-hadits Pilihan Arbain', 'Hadits Pilihan', 5],
+            ];
+            $stmtInsertTahf = $pdo->prepare("INSERT IGNORE INTO `tahfidh_categories` (`nama_kategori`, `kelompok`, `urutan`) VALUES (?, ?, ?)");
+            foreach ($defaultTahfList as $tItem) {
+                $stmtInsertTahf->execute($tItem);
+            }
+        }
     } catch (Throwable $e) {
         // Ignored
     }

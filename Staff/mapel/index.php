@@ -31,6 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if ((int)$stmtCheck->fetchColumn() > 0) {
             $errors[] = "Mata pelajaran '{$namaMapel}' sudah ada di database.";
         } else {
+            $stmtUrt = $pdo->query("SELECT COALESCE(MAX(urutan), 0) + 1 FROM subjects");
+            $urutan = (int)$stmtUrt->fetchColumn();
+
             $stmtInsert = $pdo->prepare("INSERT INTO subjects (nama_mapel, kelompok, urutan) VALUES (:nm, :klp, :urt)");
             $stmtInsert->execute(['nm' => $namaMapel, 'klp' => $kelompok, 'urt' => $urutan]);
             set_flash('success', "Mata pelajaran '{$namaMapel}' berhasil ditambahkan ke sistem.");
@@ -95,7 +98,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <input type="text" name="nama_mapel" placeholder="Contoh: Bahasa Sunda / Informatika" required autofocus>
             </div>
 
-            <div class="field" style="margin-bottom: 16px;">
+            <div class="field" style="margin-bottom: 22px;">
                 <label>Kelompok Kurikulum *</label>
                 <select name="kelompok" required>
                     <option value="Kelompok A (Agama)">Kelompok A (Pendidikan Agama Islam)</option>
@@ -103,11 +106,6 @@ require_once __DIR__ . '/../../includes/header.php';
                     <option value="Muatan Lokal">Muatan Lokal / Keterampilan</option>
                     <option value="Tahfidh">Tahfidh / Keagamaan Khusus</option>
                 </select>
-            </div>
-
-            <div class="field" style="margin-bottom: 22px;">
-                <label>Nomor Urutan Tampilan</label>
-                <input type="number" name="urutan" value="<?= count($subjects) + 1 ?>" min="1" placeholder="Urutan di rapor">
             </div>
 
             <button type="submit" class="btn btn-primary" style="width: 100%;">

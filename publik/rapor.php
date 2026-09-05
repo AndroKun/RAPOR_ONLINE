@@ -14,13 +14,17 @@ if ($query !== '') {
     $searched = true;
     if (mb_strlen($query) >= $minimumQueryLength) {
         $stmt = $pdo->prepare(
-            "SELECT r.id as report_id, r.semester, r.school_year, r.published_at,
-                    s.id as student_id, s.nama, s.nisn, s.kelas
-             FROM reports r
-             INNER JOIN students s ON s.id = r.student_id
-             WHERE r.status = 'published'
-               AND (s.nisn = :nisn OR s.nama LIKE :nama)
-             ORDER BY s.nama ASC
+            "SELECT 
+                s.id as student_id, s.nama, s.nisn, s.kelas,
+                COALESCE(r.id, 0) as report_id,
+                COALESCE(r.semester, 2) as semester,
+                COALESCE(r.school_year, '2025/2026') as school_year,
+                COALESCE(r.status, 'ready') as status,
+                r.published_at
+             FROM students s
+             LEFT JOIN reports r ON r.student_id = s.id
+             WHERE (s.nisn = :nisn OR s.nama LIKE :nama)
+             ORDER BY s.nama ASC, r.semester DESC
              LIMIT 20"
         );
         $stmt->execute([
@@ -68,17 +72,22 @@ if ($query !== '') {
             <?php elseif (empty($reports)): ?>
                 <div class="alert-box alert-notfound">
                     <p style="margin:0 0 5px 0; font-weight:bold;">Data rapor tidak ditemukan.</p>
-                    <small>Pastikan NISN atau penulisan nama sudah benar, dan rapor telah resmi dipublikasikan oleh pihak madrasah.</small>
+                    <small>Pastikan NISN atau penulisan nama sudah benar.</small>
                 </div>
             <?php else: ?>
                 <?php foreach ($reports as $report): ?>
                     <?php
                     $semText = ((int)$report['semester'] === 1) ? 'I (Satu) / Ganjil' : 'II (Dua) / Genap';
+                    $isPublished = ($report['status'] === 'published');
                     ?>
                     <div class="result-card">
                         <h3>
-                            <span>Hasil Pencarian</span>
-                            <span style="font-size:12px; background:#d4edda; color:#155724; padding:3px 10px; border-radius:12px; font-weight:normal;">Resmi Dipublikasikan</span>
+                            <span>Hasil Pencarian: <?= e($report['nama']) ?></span>
+                            <?php if ($isPublished): ?>
+                                <span style="font-size:12px; background:#d4edda; color:#155724; padding:4px 12px; border-radius:12px; font-weight:700;">Resmi Dipublikasikan</span>
+                            <?php else: ?>
+                                <span style="font-size:12px; background:#e8f5e9; color:#1b5e20; padding:4px 12px; border-radius:12px; font-weight:700;">Dokumen Rapor Tersedia</span>
+                            <?php endif; ?>
                         </h3>
                         <div class="student-info">
                             <p><strong>Nama Siswa:</strong> <?= e($report['nama']) ?></p>
@@ -87,8 +96,8 @@ if ($query !== '') {
                             <p><strong>Semester:</strong> <?= $semText ?></p>
                             <p><strong>Tahun Pelajaran:</strong> <?= e($report['school_year']) ?></p>
                         </div>
-                        <a href="<?= e(base_url('/publik/download.php?id=' . (int)$report['report_id'])) ?>" class="download-btn" target="_blank">
-                            📥 Unduh Dokumen PDF Rapor
+                        <a href="<?= e(base_url('/publik/download.php?student_id=' . (int)$report['student_id'] . '&semester=' . (int)$report['semester'] . '&school_year=' . urlencode($report['school_year']))) ?>" class="download-btn" target="_blank">
+                            🖨 Unduh / Cetak Dokumen PDF Rapor
                         </a>
                     </div>
                 <?php endforeach; ?>

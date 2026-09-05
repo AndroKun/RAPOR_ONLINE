@@ -8,10 +8,11 @@ require_once __DIR__ . '/../includes/fungsi.php';
 $query = trim($_GET['q'] ?? '');
 $reports = [];
 $searched = false;
+$minimumQueryLength = 2;
 
 if ($query !== '') {
     $searched = true;
-    if (strlen($query) >= 3) {
+    if (mb_strlen($query) >= $minimumQueryLength) {
         $stmt = $pdo->prepare(
             "SELECT r.id as report_id, r.semester, r.school_year, r.published_at,
                     s.id as student_id, s.nama, s.nisn, s.kelas
@@ -54,15 +55,15 @@ if ($query !== '') {
             <h2>Cari Rapor Siswa</h2>
             <p>Masukkan NISN (Nomor Induk Siswa Nasional) atau Nama Lengkap Siswa</p>
             <form method="GET" action="" class="search-form">
-                <input type="text" name="q" value="<?= e($query) ?>" placeholder="Contoh: 0136347734 atau Nalaa..." minlength="3" required autofocus>
+                <input type="search" name="q" value="<?= e($query) ?>" placeholder="Contoh: 0136347734 atau Nama Siswa" minlength="2" required autofocus autocomplete="off">
                 <button type="submit">Cari Data</button>
             </form>
         </div>
 
         <?php if ($searched): ?>
-            <?php if (strlen($query) < 3): ?>
+            <?php if (mb_strlen($query) < $minimumQueryLength): ?>
                 <div class="alert-box alert-notfound">
-                    Mohon masukkan minimal <strong>3 karakter</strong> untuk pencarian data siswa.
+                    Mohon masukkan minimal <strong><?= $minimumQueryLength ?> karakter</strong> berupa NISN atau nama siswa.
                 </div>
             <?php elseif (empty($reports)): ?>
                 <div class="alert-box alert-notfound">

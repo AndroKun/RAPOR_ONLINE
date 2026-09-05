@@ -1,10 +1,12 @@
+<?php
+declare(strict_types=1);
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Rapor - MTs Roudlotul Qur'an</title>
-    <!-- Memanggil file CSS eksternal -->
     <link rel="stylesheet" href="desainrapor.css">
 </head>
 <body>

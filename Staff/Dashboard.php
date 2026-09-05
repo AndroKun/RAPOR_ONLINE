@@ -1,10 +1,12 @@
+<?php
+declare(strict_types=1);
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Staf - MTs Roudlotul Qur'an</title>
-    <!-- Memanggil file CSS eksternal -->
     <link rel="stylesheet" href="desainstaff.css">
 </head>
 <body>
@@ -15,7 +17,7 @@
             <p style="font-size: 12px; margin-top: 5px;">Portal Staf & Guru</p>
         </div>
         <a href="#" class="menu-item active">Dashboard Utama</a>
-        <a href="#" class="menu-item">Input Data Siswa</a>
+        <a href="inputsiswa.php" class="menu-item">Input Data Siswa</a>
         <a href="#" class="menu-item">Input Nilai Akademik</a>
         <a href="#" class="menu-item">Input Nilai Tahfidh</a>
         <a href="#" class="menu-item">Manajemen Cetak PDF</a>
@@ -46,7 +48,7 @@
         <div class="data-section">
             <div class="data-header">
                 <h2>Data Nilai Siswa Kelas VII</h2>
-                <button class="btn-add">+ Tambah Data Baru</button>
+                <a href="inputsiswa.php" class="btn-add">+ Tambah Data Baru</a>
             </div>
             <table>
                 <thead>

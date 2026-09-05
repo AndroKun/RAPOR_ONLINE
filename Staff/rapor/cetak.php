@@ -9,13 +9,13 @@ require_once __DIR__ . '/../../includes/pdf_helper.php';
 
 require_login();
 
-$studentId = filter_input(INPUT_GET, 'student_id', FILTER_VALIDATE_INT);
+$studentId = isset($_GET['student_id']) && is_numeric($_GET['student_id']) ? (int)$_GET['student_id'] : null;
 if (!$studentId) {
     set_flash('danger', 'Siswa tidak ditemukan.');
     redirect('/staff/rapor/index.php');
 }
 
-$semester = (int)($_GET['semester'] ?? 2);
+$semester = isset($_GET['semester']) && is_numeric($_GET['semester']) ? (int)$_GET['semester'] : 2;
 $schoolYear = trim($_GET['school_year'] ?? '2025/2026');
 
 // Ambil data siswa & wali

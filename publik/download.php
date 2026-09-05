@@ -6,9 +6,9 @@ require_once __DIR__ . '/../config/koneksi.php';
 require_once __DIR__ . '/../includes/fungsi.php';
 require_once __DIR__ . '/../includes/pdf_helper.php';
 
-$reportId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-$studentId = filter_input(INPUT_GET, 'student_id', FILTER_VALIDATE_INT);
-$semester = (int)($_GET['semester'] ?? 2);
+$reportId = isset($_GET['id']) && is_numeric($_GET['id']) ? (int)$_GET['id'] : null;
+$studentId = isset($_GET['student_id']) && is_numeric($_GET['student_id']) ? (int)$_GET['student_id'] : null;
+$semester = isset($_GET['semester']) && is_numeric($_GET['semester']) ? (int)$_GET['semester'] : 2;
 $schoolYear = trim($_GET['school_year'] ?? '2025/2026');
 
 $data = null;

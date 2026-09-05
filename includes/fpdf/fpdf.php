@@ -208,6 +208,7 @@ class FPDF
     public function Open()
     {
         $this->state = 1;
+        $this->_put('%PDF-' . $this->PDFVersion);
     }
 
     public function Close()

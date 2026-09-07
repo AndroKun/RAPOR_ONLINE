@@ -36,7 +36,7 @@ $isGuruMapel = ($userRole === 'staff');
 
         <?php if ($isAdmin || $isGuruMapel): ?>
         <li>
-            <a href="<?= e(base_url('/staff/nilai/input.php')) ?>" class="<?= in_array($activeMenu, ['nilai', 'inputnilai']) ? 'active' : '' ?>">
+            <a href="<?= e(base_url('/staff/nilai/index.php')) ?>" class="<?= in_array($activeMenu, ['nilai', 'inputnilai']) ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <path d="M4 5.5A2.5 2.5 0 016.5 3H19v16H6.5A2.5 2.5 0 004 16.5v-11z" stroke="currentColor" stroke-width="1.6"/>
                     <path d="M8 8h7M8 12h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>

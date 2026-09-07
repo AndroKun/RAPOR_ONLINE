@@ -94,7 +94,7 @@ require_once __DIR__ . '/../includes/header.php';
         <?php elseif ($userRole === 'admin'): ?>
             <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="btn btn-primary" id="addBtn">+ Tambah Siswa Baru</a>
         <?php else: ?>
-            <a href="<?= e(base_url('/staff/nilai/input.php')) ?>" class="btn btn-primary" id="addBtn">✏️ Input Nilai Akademik</a>
+            <a href="<?= e(base_url('/staff/nilai/index.php')) ?>" class="btn btn-primary" id="addBtn">📝 Input Nilai Akademik</a>
         <?php endif; ?>
     </div>
 
@@ -153,10 +153,10 @@ require_once __DIR__ . '/../includes/header.php';
                                     <?php if ($userRole === 'guru_tahfidh'): ?>
                                         <a href="<?= e(base_url('/staff/tahfidh/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📖 Input Tahfidh</a>
                                     <?php elseif ($userRole === 'admin'): ?>
-                                        <a href="<?= e(base_url('/staff/nilai/input.php?kelas=' . urlencode($row['kelas']))) ?>" class="btn btn-ghost btn-sm">Nilai Mapel</a>
-                                        <a href="<?= e(base_url('/staff/tahfidh/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">Tahfidh</a>
+                                        <a href="<?= e(base_url('/staff/nilai/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📝 Nilai Mapel</a>
+                                        <a href="<?= e(base_url('/staff/tahfidh/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📖 Tahfidh</a>
                                     <?php else: ?>
-                                        <a href="<?= e(base_url('/staff/nilai/input.php?kelas=' . urlencode($row['kelas']))) ?>" class="btn btn-ghost btn-sm">Edit Nilai</a>
+                                        <a href="<?= e(base_url('/staff/nilai/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📝 Edit Nilai</a>
                                     <?php endif; ?>
 
                                     <?php if ($isLengkap || in_array($row['report_status'] ?? '', ['ready', 'published'], true)): ?>

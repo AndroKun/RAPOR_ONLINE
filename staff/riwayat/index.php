@@ -386,7 +386,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <?php if ($isTahfidh): ?>
                                         <a href="<?= e(base_url('/staff/tahfidh/input.php?student_id=' . (int)$row['student_id'] . '&semester=' . (int)$row['semester'] . '&school_year=' . urlencode($row['school_year']))) ?>" class="btn btn-ghost btn-sm" title="Edit Nilai Tahfidh">Edit</a>
                                     <?php else: ?>
-                                        <a href="<?= e(base_url('/staff/nilai/input.php?kelas=' . urlencode($row['kelas']) . '&semester=' . (int)$row['semester'] . '&subject=' . urlencode($row['item_name']))) ?>" class="btn btn-ghost btn-sm" title="Edit Nilai Mapel">Edit</a>
+                                        <a href="<?= e(base_url('/staff/nilai/input.php?student_id=' . (int)$row['student_id'] . '&semester=' . (int)$row['semester'] . '&school_year=' . urlencode($row['school_year']))) ?>" class="btn btn-ghost btn-sm" title="Edit Nilai Mapel">Edit</a>
                                     <?php endif; ?>
                                     <a href="<?= e(base_url('/staff/rapor/cetak.php?student_id=' . (int)$row['student_id'] . '&semester=' . (int)$row['semester'] . '&school_year=' . urlencode($row['school_year']))) ?>" target="_blank" class="btn btn-gold btn-sm" title="Cetak Rapor PDF">PDF</a>
                                 </div>

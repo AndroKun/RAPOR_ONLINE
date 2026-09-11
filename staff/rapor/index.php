@@ -21,17 +21,25 @@ $search = trim($_GET['q'] ?? '');
 
 $sql = "SELECT s.id as student_id, s.nis, s.nisn, s.nama, s.kelas,
         r.id as report_id, r.status, r.published_at,
-        (SELECT COUNT(*) FROM academic_grades ag WHERE ag.student_id = s.id AND ag.semester = :sem AND ag.school_year = :sy) as count_academic,
-        (SELECT COUNT(*) FROM tahfidh_grades tg WHERE tg.student_id = s.id AND tg.semester = :sem AND tg.school_year = :sy) as count_tahfidh
+        (SELECT COUNT(*) FROM academic_grades ag WHERE ag.student_id = s.id AND ag.semester = :sem_academic AND ag.school_year = :sy_academic) as count_academic,
+        (SELECT COUNT(*) FROM tahfidh_grades tg WHERE tg.student_id = s.id AND tg.semester = :sem_tahfidh AND tg.school_year = :sy_tahfidh) as count_tahfidh
         FROM students s
-        LEFT JOIN reports r ON r.student_id = s.id AND r.semester = :sem AND r.school_year = :sy
+        LEFT JOIN reports r ON r.student_id = s.id AND r.semester = :sem_report AND r.school_year = :sy_report
         WHERE 1=1";
 
-$params = ['sem' => $semester, 'sy' => $schoolYear];
+$params = [
+    'sem_academic' => $semester,
+    'sy_academic' => $schoolYear,
+    'sem_tahfidh' => $semester,
+    'sy_tahfidh' => $schoolYear,
+    'sem_report' => $semester,
+    'sy_report' => $schoolYear,
+];
 
 if ($search !== '') {
-    $sql .= " AND (s.nama LIKE :q OR s.nisn LIKE :q)";
-    $params['q'] = "%{$search}%";
+    $sql .= " AND (s.nama LIKE :q_nama OR s.nisn LIKE :q_nisn)";
+    $params['q_nama'] = "%{$search}%";
+    $params['q_nisn'] = "%{$search}%";
 }
 
 if ($kelasFilter !== '') {

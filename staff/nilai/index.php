@@ -31,6 +31,7 @@ $sql = "SELECT s.id, s.nis, s.nisn, s.nama, s.kelas,
         COUNT(ag.id) as total_mapel,
         AVG(ag.score) as rata_rata,
         MAX(CASE WHEN ag.subject = :t_mapel THEN ag.score ELSE NULL END) as teacher_score,
+        MAX(CASE WHEN ag.subject = :t_mapel_pred THEN ag.predikat ELSE NULL END) as teacher_predikat,
         MAX(CASE WHEN ag.subject = :t_mapel_desc THEN ag.description ELSE NULL END) as teacher_desc
         FROM students s
         LEFT JOIN academic_grades ag ON ag.student_id = s.id AND ag.semester = :sem AND ag.school_year = :sy
@@ -40,6 +41,7 @@ $params = [
     'sem' => $semester, 
     'sy' => $schoolYear,
     't_mapel' => $teacherMapel,
+    't_mapel_pred' => $teacherMapel,
     't_mapel_desc' => $teacherMapel
 ];
 
@@ -194,10 +196,15 @@ require_once __DIR__ . '/../../includes/header.php';
                         $pred = '–';
                         $predClass = '';
                         if ($tScore !== null) {
-                            if ($tScore >= 91) { $pred = 'A'; $predClass = 'p-a'; }
-                            elseif ($tScore >= 81) { $pred = 'B'; $predClass = 'p-b'; }
-                            elseif ($tScore >= 71) { $pred = 'C'; $predClass = 'p-c'; }
-                            else { $pred = 'D'; $predClass = 'p-d'; }
+                            $pred = in_array($st['teacher_predikat'] ?? '', ['A', 'B', 'C', 'D', 'E'], true) ? $st['teacher_predikat'] : '';
+                            if ($pred === '') {
+                                if ($tScore >= 91) { $pred = 'A'; $predClass = 'p-a'; }
+                                elseif ($tScore >= 81) { $pred = 'B'; $predClass = 'p-b'; }
+                                elseif ($tScore >= 71) { $pred = 'C'; $predClass = 'p-c'; }
+                                else { $pred = 'D'; $predClass = 'p-d'; }
+                            } else {
+                                $predClass = 'p-' . strtolower($pred);
+                            }
                         }
                     ?>
                         <tr data-student="<?= e(strtolower($st['nama'] . ' ' . $st['nisn'] . ' ' . $st['nis'] . ' kelas ' . $st['kelas'])) ?>" data-kelas="<?= e($st['kelas']) ?>">

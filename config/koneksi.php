@@ -43,6 +43,18 @@ try {
         // Ignored if already exists
     }
 
+    try {
+        $pdo->exec("ALTER TABLE `academic_grades` ADD COLUMN `predikat` ENUM('A','B','C','D','E') NULL AFTER `score`");
+    } catch (Throwable $e) {
+        // Ignored if already exists
+    }
+
+    try {
+        $pdo->exec("ALTER TABLE `tahfidh_grades` ADD COLUMN `predikat` ENUM('A','B','C','D','E') NULL AFTER `score`");
+    } catch (Throwable $e) {
+        // Ignored if already exists
+    }
+
     // Ensure subjects table exists and is populated
     try {
         $pdo->exec("

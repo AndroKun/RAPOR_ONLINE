@@ -204,6 +204,7 @@ if ($isAdmin || $isGuruMapel) {
                 ag.student_id,
                 ag.subject AS item_name,
                 ag.score,
+                ag.predikat,
                 ag.description,
                 ag.semester,
                 ag.school_year,
@@ -256,6 +257,7 @@ if ($isAdmin || $isGuruTahfidh) {
                 tg.student_id,
                 tg.memorization AS item_name,
                 tg.score,
+                tg.predikat,
                 tg.description,
                 tg.semester,
                 tg.school_year,
@@ -458,7 +460,10 @@ require_once __DIR__ . '/../../includes/header.php';
                         
                         $pred = '–';
                         $predClass = '';
-                        if ($score >= 91) { $pred = 'A'; $predClass = 'p-a'; }
+                        if (in_array($row['predikat'] ?? '', ['A', 'B', 'C', 'D', 'E'], true)) {
+                            $pred = $row['predikat'];
+                            $predClass = 'p-' . strtolower($pred);
+                        } elseif ($score >= 91) { $pred = 'A'; $predClass = 'p-a'; }
                         elseif ($score >= 81) { $pred = 'B'; $predClass = 'p-b'; }
                         elseif ($score >= 71) { $pred = 'C'; $predClass = 'p-c'; }
                         else { $pred = 'D'; $predClass = 'p-d'; }

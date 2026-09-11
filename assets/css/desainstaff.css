@@ -639,6 +639,11 @@ td.predikat {
   color: #065F46;
 }
 
+.predikat-badge.p-e {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
 .predikat-badge.p-b {
   background: var(--gold-100);
   color: #92400E;

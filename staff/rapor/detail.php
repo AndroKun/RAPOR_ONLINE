@@ -127,10 +127,13 @@ require_once __DIR__ . '/../../includes/header.php';
                     foreach ($academicGrades as $g): 
                         $score = (float)$g['score'];
                         $totalScore += $score;
-                        if ($score >= 91) $predikat = 'A (Sangat Baik)';
-                        elseif ($score >= 81) $predikat = 'B (Baik)';
-                        elseif ($score >= 71) $predikat = 'C (Cukup)';
-                        else $predikat = 'D (Perlu Bimbingan)';
+                        $storedPredicate = strtoupper(trim((string)($g['predikat'] ?? '')));
+                        if (in_array($storedPredicate, ['A', 'B', 'C', 'D', 'E'], true)) {
+                            $predikat = $storedPredicate;
+                        } elseif ($score >= 91) $predikat = 'A';
+                        elseif ($score >= 81) $predikat = 'B';
+                        elseif ($score >= 71) $predikat = 'C';
+                        else $predikat = 'D';
                     ?>
                         <tr>
                             <td><?= $no++ ?></td>

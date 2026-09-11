@@ -41,11 +41,21 @@ $activeMenu = 'nilai';
 $availableSubjects = get_all_subjects($pdo);
 
 $initialRows = [];
+$predicateOptions = ['A', 'B', 'C', 'D', 'E'];
+
+$defaultPredicate = static function (string $score): string {
+    if ($score === '') return '';
+    $value = (float)$score;
+    if ($value >= 91) return 'A';
+    if ($value >= 81) return 'B';
+    if ($value >= 71) return 'C';
+    return 'D';
+};
 
 if ($isAdmin) {
     // Admin: Ambil semua nilai akademik yang tersimpan untuk siswa ini
     $stmtSaved = $pdo->prepare("
-        SELECT subject, score, description 
+        SELECT subject, score, predikat, description 
         FROM academic_grades 
         WHERE student_id = :sid AND semester = :sem AND school_year = :sy 
         ORDER BY id ASC
@@ -58,6 +68,7 @@ if ($isAdmin) {
             $initialRows[] = [
                 'subject' => (string)$g['subject'],
                 'score' => (string)$g['score'],
+                'predikat' => (string)($g['predikat'] ?: $defaultPredicate((string)$g['score'])),
                 'description' => (string)($g['description'] ?? '')
             ];
         }
@@ -67,6 +78,7 @@ if ($isAdmin) {
             $initialRows[] = [
                 'subject' => $sub,
                 'score' => '',
+                'predikat' => '',
                 'description' => ''
             ];
         }
@@ -80,7 +92,7 @@ if ($isAdmin) {
     }
 
     $stmtSaved = $pdo->prepare("
-        SELECT score, description 
+        SELECT score, predikat, description 
         FROM academic_grades 
         WHERE student_id = :sid AND subject = :subj AND semester = :sem AND school_year = :sy 
         LIMIT 1
@@ -96,6 +108,7 @@ if ($isAdmin) {
     $initialRows[] = [
         'subject' => $subjectForTeacher,
         'score' => $savedGrade ? (string)$savedGrade['score'] : '',
+        'predikat' => $savedGrade ? (string)($savedGrade['predikat'] ?: $defaultPredicate((string)$savedGrade['score'])) : '',
         'description' => $savedGrade ? (string)($savedGrade['description'] ?? '') : ''
     ];
 }
@@ -106,15 +119,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     $scores = $_POST['scores'] ?? [];
+    $predikats = $_POST['predikats'] ?? [];
     $descriptions = $_POST['descriptions'] ?? [];
 
     try {
         $pdo->beginTransaction();
 
         $stmtInsert = $pdo->prepare("
-            INSERT INTO academic_grades (student_id, subject, score, description, semester, school_year, created_at, updated_at) 
-            VALUES (:sid, :subj, :score, :desc, :sem, :sy, NOW(), NOW())
-            ON DUPLICATE KEY UPDATE score = VALUES(score), description = VALUES(description), updated_at = NOW()
+            INSERT INTO academic_grades (student_id, subject, score, predikat, description, semester, school_year, created_at, updated_at) 
+            VALUES (:sid, :subj, :score, :predikat, :desc, :sem, :sy, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE score = VALUES(score), predikat = VALUES(predikat), description = VALUES(description), updated_at = NOW()
         ");
 
         if ($isAdmin) {
@@ -127,9 +141,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             for ($i = 0; $i < count($subjects); $i++) {
                 $subj = trim((string)($subjects[$i] ?? ''));
                 $scoreVal = trim((string)($scores[$i] ?? ''));
+                $predikat = strtoupper(trim((string)($predikats[$i] ?? '')));
                 $desc = trim((string)($descriptions[$i] ?? ''));
 
                 if ($subj !== '' && $scoreVal !== '') {
+                    if (!in_array($predikat, $predicateOptions, true)) {
+                        throw new Exception("Predikat mata pelajaran '{$subj}' harus dipilih dari A sampai E.");
+                    }
                     $scoreNum = (float)$scoreVal;
                     if ($scoreNum < 0 || $scoreNum > 100) {
                         throw new Exception("Nilai mata pelajaran '{$subj}' harus berada pada rentang 0 sampai 100.");
@@ -139,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'sid' => $studentId,
                         'subj' => $subj,
                         'score' => $scoreNum,
+                        'predikat' => $predikat,
                         'desc' => $desc ?: null,
                         'sem' => $semester,
                         'sy' => $schoolYear,
@@ -149,9 +168,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Guru/Staff: Terkunci HANYA untuk mata pelajaran guru tersebut
             $subj = ($teacherMapel !== '') ? $teacherMapel : ($availableSubjects[0] ?? 'Bahasa Indonesia');
             $scoreVal = trim((string)($scores[0] ?? ''));
+            $predikat = strtoupper(trim((string)($predikats[0] ?? '')));
             $desc = trim((string)($descriptions[0] ?? ''));
 
             if ($scoreVal !== '') {
+                if (!in_array($predikat, $predicateOptions, true)) {
+                    throw new Exception("Predikat mata pelajaran '{$subj}' harus dipilih dari A sampai E.");
+                }
                 $scoreNum = (float)$scoreVal;
                 if ($scoreNum < 0 || $scoreNum > 100) {
                     throw new Exception("Nilai mata pelajaran '{$subj}' harus berada pada rentang 0 sampai 100.");
@@ -161,6 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'sid' => $studentId,
                     'subj' => $subj,
                     'score' => $scoreNum,
+                    'predikat' => $predikat,
                     'desc' => $desc ?: null,
                     'sem' => $semester,
                     'sy' => $schoolYear,
@@ -259,7 +283,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <h2><?= $isAdmin ? 'Formulir Capaian Nilai Akademik Siswa' : 'Formulir Nilai Mata Pelajaran: ' . e($initialRows[0]['subject']) ?></h2>
             <p class="section-hint" style="margin: 2px 0 0;">
                 <?= $isAdmin 
-                    ? 'Ketik nilai mata pelajaran (skala 0–100). Predikat akan terhitung secara otomatis. Klik <strong>+ Tambah Baris Mapel</strong> jika ingin menambah mata pelajaran.' 
+                    ? 'Masukkan nilai (skala 0–100) dan pilih predikat A–E. Klik <strong>+ Tambah Baris Mapel</strong> jika ingin menambah mata pelajaran.'
                     : 'Ketik nilai ujian/tugas mata pelajaran <strong>' . e($initialRows[0]['subject']) . '</strong> (skala 0–100) dan catatan capaian santri.' ?>
             </p>
         </div>
@@ -281,7 +305,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     <th style="width: 45px;" class="num">No</th>
                     <th style="min-width: 250px;">Mata Pelajaran</th>
                     <th style="width: 120px;" class="num">Nilai (0–100)</th>
-                    <th style="width: 90px; text-align: center;">Predikat</th>
+                    <th style="width: 105px; text-align: center;">Predikat (A-E)</th>
                     <th>Capaian Kompetensi / Catatan Guru</th>
                     <?php if ($isAdmin): ?>
                         <th style="width: 60px; text-align: center;">Aksi</th>
@@ -306,6 +330,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 foreach ($initialRows as $index => $row): 
                     $valSubj = (string)$row['subject'];
                     $valScore = (string)$row['score'];
+                    $valPredikat = (string)($row['predikat'] ?? '');
                     $valDesc = (string)$row['description'];
 
                     $pred = '–';
@@ -349,7 +374,12 @@ require_once __DIR__ . '/../../includes/header.php';
                                    style="width: 100px; padding: 8px 10px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
                         </td>
                         <td data-label="Predikat" style="text-align: center;">
-                            <span class="predikat-badge <?= $predClass ?>"><?= $pred ?></span>
+                            <select name="predikats[]" class="predicate-select" style="width: 78px; padding: 8px 6px; text-align: center; font-weight: 700; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+                                <option value="">-</option>
+                                <?php foreach ($predicateOptions as $option): ?>
+                                    <option value="<?= $option ?>" <?= $valPredikat === $option ? 'selected' : '' ?>><?= $option ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </td>
                         <td data-label="Catatan Guru">
                             <input type="text" name="descriptions[]" value="<?= e($valDesc) ?>" placeholder="Contoh: Sangat baik dalam memahami materi pembelajaran..." 
@@ -419,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (isAdmin && btnAdd) {
-        function createRow(subject = '', score = '', description = '') {
+        function createRow(subject = '', score = '', predikat = '', description = '') {
             const tr = document.createElement('tr');
             tr.className = 'akademik-data-row';
 
@@ -450,7 +480,10 @@ document.addEventListener('DOMContentLoaded', () => {
                            style="width: 100px; padding: 8px 10px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
                 </td>
                 <td data-label="Predikat" style="text-align: center;">
-                    <span class="predikat-badge ${pred.cls}">${pred.label}</span>
+                    <select name="predikats[]" class="predicate-select" style="width: 78px; padding: 8px 6px; text-align: center; font-weight: 700; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+                        <option value="">-</option>
+                        ${['A', 'B', 'C', 'D', 'E'].map(option => `<option value="${option}" ${option === predikat ? 'selected' : ''}>${option}</option>`).join('')}
+                    </select>
                 </td>
                 <td data-label="Catatan Guru">
                     <input type="text" name="descriptions[]" value="${escapeHtml(description)}" placeholder="Contoh: Sangat baik dalam memahami materi pembelajaran..." 

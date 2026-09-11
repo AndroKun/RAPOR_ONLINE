@@ -19,7 +19,8 @@ $semester = isset($_GET['semester']) && is_numeric($_GET['semester']) ? (int)$_G
 $schoolYear = trim($_GET['school_year'] ?? '2025/2026');
 
 // Ambil data siswa & wali
-$stmt = $pdo->prepare("SELECT s.*, g.nama_ayah, g.nama_ibu, g.nama_wali 
+$stmt = $pdo->prepare("SELECT s.*, g.nama_ayah, g.nama_ibu, g.alamat_orang_tua, g.pekerjaan_ayah, g.pekerjaan_ibu,
+                              g.nama_wali, g.alamat_wali, g.pekerjaan_wali
                        FROM students s 
                        LEFT JOIN guardians g ON g.student_id = s.id 
                        WHERE s.id = :id LIMIT 1");

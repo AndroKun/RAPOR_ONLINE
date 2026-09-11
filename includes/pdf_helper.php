@@ -6,375 +6,159 @@ require_once __DIR__ . '/fpdf/fpdf.php';
 
 class RaporTemplatePDF extends FPDF
 {
-    public function Header()
+    public function Header(): void
     {
-        // Custom header handled manually
     }
 
-    public function Footer()
+    public function Footer(): void
     {
-        $this->SetY(-12);
-        $this->SetFont('Helvetica', 'I', 7.5);
-        $this->SetTextColor(120, 135, 125);
-        $this->Cell(0, 8, "Dokumen Resmi Rapor MTs Tahfidh Roudlotul Qur'an - Dicetak pada: " . date('d/m/Y H:i') . " | Halaman " . $this->PageNo(), 0, 0, 'C');
-    }
-
-    public function MultiCellBox($x, $y, $w, $lineHeight, $txt, $fillColor = [245, 250, 247], $drawColor = [198, 235, 211])
-    {
-        $lines = explode("\n", wordwrap($txt, 34, "\n"));
-        $boxHeight = max(24, count($lines) * $lineHeight + 5);
-        
-        $this->SetFillColor($fillColor[0], $fillColor[1], $fillColor[2]);
-        $this->SetDrawColor($drawColor[0], $drawColor[1], $drawColor[2]);
-        $this->Rect($x, $y, $w, $boxHeight, 'DF');
-
-        $curY = $y + 2.5;
-        $this->SetFont('Helvetica', 'I', 7.5);
-        $this->SetTextColor(40, 55, 45);
-
-        foreach ($lines as $line) {
-            $this->SetXY($x + 2, $curY);
-            $this->Cell($w - 4, $lineHeight, $line, 0, 0, 'L', false);
-            $curY += $lineHeight;
-        }
-        $this->SetY($y + $boxHeight);
+        $this->SetY(-10);
+        $this->SetFont('Helvetica', '', 7);
+        $this->SetTextColor(100, 100, 100);
+        $this->Cell(0, 5, 'Rapor MTs Roudlotul Qur\'an - Halaman ' . $this->PageNo(), 0, 0, 'C');
     }
 }
 
-/**
- * Generate PDF based on the requested template layout
- */
+function rapor_text(mixed $value, string $fallback = ''): string
+{
+    $text = trim((string)($value ?? ''));
+    return $text !== '' ? $text : $fallback;
+}
+
+function rapor_grade(float $score): string
+{
+    if ($score >= 90) return 'A';
+    if ($score >= 80) return 'B';
+    if ($score >= 70) return 'C';
+    return 'D';
+}
+
+function rapor_header(RaporTemplatePDF $pdf, string $title, bool $formal = false): void
+{
+    $pdf->SetDrawColor(0, 0, 0);
+    $pdf->SetLineWidth(0.45);
+    $pdf->SetFont('Helvetica', 'B', 13);
+    $pdf->SetXY(25, 12);
+    $pdf->Cell(160, 7, "YAYASAN ROUDLOTUL QUR'AN AZ ZUHRI", 0, 1, 'C');
+    $pdf->SetFont('Helvetica', 'B', 15);
+    $pdf->Cell(190, 7, '" MTS ROUDLOTUL QUR\'AN "', 0, 1, 'C');
+    $pdf->SetFont('Helvetica', '', 9);
+    $pdf->Cell(190, 5, 'Desa Ngampelsari Rt. 03 Ngampelsari, Candi, Sidoarjo', 0, 1, 'C');
+    $pdf->Cell(190, 5, 'Email: mtsroudlotulquran@gmail.com  Telepon: 0821-4596-4013', 0, 1, 'C');
+    $pdf->Cell(190, 5, 'SK KEMENKUMHAM Nomor AHU-0027813.AH.01.04. Tahun 2022', 0, 1, 'C');
+    $pdf->Line(14, 39, 196, 39);
+    $pdf->SetFont('Helvetica', 'B', $formal ? 15 : 13);
+    $pdf->SetXY(14, 44);
+    $pdf->Cell(182, 8, $title, 0, 1, 'C');
+}
+
+function rapor_student_info(RaporTemplatePDF $pdf, array $student, array $report, float $y = 58, bool $includeNisn = true): void
+{
+    $semester = ((int)($report['semester'] ?? 2) === 1) ? '1 (Ganjil)' : '2 (Genap)';
+    $year = rapor_text($report['school_year'] ?? '', '2025/2026');
+    $rows = [
+        ['Nama Siswa', rapor_text($student['nama']), 'Kelas', rapor_text($student['kelas'])],
+        ['Nomor Induk', rapor_text($student['nis']), 'Semester', $semester],
+        [$includeNisn ? 'NISN' : 'Program', $includeNisn ? rapor_text($student['nisn']) : 'MTs Roudlotul Qur\'an', 'Tahun Ajaran', $year],
+    ];
+    $pdf->SetFont('Helvetica', 'B', 10);
+    foreach ($rows as $row) {
+        $pdf->SetXY(16, $y);
+        $pdf->Cell(32, 7, $row[0], 0, 0);
+        $pdf->Cell(60, 7, ': ' . $row[1], 0, 0);
+        $pdf->Cell(32, 7, $row[2], 0, 0);
+        $pdf->Cell(58, 7, ': ' . $row[3], 0, 1);
+        $y += 8;
+    }
+}
+
+function rapor_table_cell(RaporTemplatePDF $pdf, float $width, float $height, string $value = '', string $align = 'L', bool $fill = false): void
+{
+    $pdf->Cell($width, $height, $value, 1, 0, $align, $fill);
+}
+
+function rapor_biodata(RaporTemplatePDF $pdf, array $student): void
+{
+    rapor_header($pdf, 'DATA DIRI SISWA', true);
+    $fields = [
+        ['1. Nama Siswa', rapor_text($student['nama'])], ['2. Nomor Induk', rapor_text($student['nis'])],
+        ['3. NIS Nasional', rapor_text($student['nisn'])], ['4. Jenis Kelamin', rapor_text($student['jenis_kelamin'])],
+        ['5. Tempat dan Tgl Lahir', trim(rapor_text($student['tempat_lahir']) . ', ' . rapor_text($student['tanggal_lahir']))],
+        ['6. Agama', rapor_text($student['agama'])], ['7. Anak Ke', rapor_text($student['anak_ke'])],
+        ['8. Status di Keluarga', rapor_text($student['status_keluarga'])], ['9. Alamat Siswa', rapor_text($student['alamat'])],
+        ['10. Diterima di sekolah ini', ''], ['   a. Di Kelas', rapor_text($student['kelas'])],
+        ['   b. Pada Tanggal', rapor_text($student['tanggal_diterima'])], ['11. Sekolah Asal', ''],
+        ['   a. Nama Sekolah', rapor_text($student['sekolah_asal'])], ['   b. Alamat Sekolah', rapor_text($student['alamat_sekolah_asal'])],
+        ['12. Nama Orang Tua', ''], ['   a. Ayah', rapor_text($student['nama_ayah'])], ['   b. Ibu', rapor_text($student['nama_ibu'])],
+        ['13. Alamat Orang Tua', rapor_text($student['alamat_orang_tua'])], ['14. Pekerjaan Orang Tua', ''],
+        ['   a. Ayah', rapor_text($student['pekerjaan_ayah'])], ['   b. Ibu', rapor_text($student['pekerjaan_ibu'])],
+        ['15. Nama Wali', rapor_text($student['nama_wali'])], ['16. Alamat Wali', rapor_text($student['alamat_wali'])],
+        ['17. Pekerjaan', rapor_text($student['pekerjaan_wali'])],
+    ];
+    $pdf->SetFont('Helvetica', '', 9);
+    $y = 58;
+    foreach ($fields as $field) {
+        $pdf->SetXY(20, $y); $pdf->Cell(62, 6, $field[0], 0, 0); $pdf->Cell(4, 6, ':', 0, 0); $pdf->Cell(108, 6, $field[1], 0, 1); $y += 6.6;
+    }
+    $pdf->SetFont('Helvetica', '', 8); $pdf->SetXY(125, 258); $pdf->Cell(65, 5, 'Sidoarjo, ' . date('d-m-Y'), 0, 1, 'C');
+    $pdf->SetXY(125, 265); $pdf->Cell(65, 5, 'KEPALA MADRASAH', 0, 1, 'C'); $pdf->SetXY(125, 282); $pdf->Cell(65, 5, '(nama kepala sekolah)', 0, 1, 'C');
+}
+
+function rapor_academic_page(RaporTemplatePDF $pdf, array $student, array $report, array $grades, string $title): void
+{
+    rapor_header($pdf, $title); rapor_student_info($pdf, $student, $report, 57, true); $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetFillColor(198, 235, 147);
+    rapor_table_cell($pdf, 10, 9, 'No', 'C', true); rapor_table_cell($pdf, 62, 9, 'Mata Pelajaran', 'C', true); rapor_table_cell($pdf, 20, 9, 'Nilai', 'C', true); rapor_table_cell($pdf, 25, 9, 'Huruf', 'C', true); rapor_table_cell($pdf, 65, 9, 'Keterangan', 'C', true); $pdf->Ln();
+    $pdf->SetFont('Helvetica', '', 8); $sum = 0.0; $count = min(count($grades), 18);
+    foreach ($grades as $i => $grade) {
+        if ($i >= 18) break; $score = (float)$grade['score']; $sum += $score;
+        rapor_table_cell($pdf, 10, 7, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 7, rapor_text($grade['subject'])); rapor_table_cell($pdf, 20, 7, number_format($score, 0), 'C'); rapor_table_cell($pdf, 25, 7, rapor_grade($score), 'C'); rapor_table_cell($pdf, 65, 7, rapor_text($grade['description'])); $pdf->Ln();
+    }
+    for ($i = $count; $i < 18; $i++) { rapor_table_cell($pdf, 10, 7, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 7); rapor_table_cell($pdf, 20, 7); rapor_table_cell($pdf, 25, 7); rapor_table_cell($pdf, 65, 7); $pdf->Ln(); }
+    $average = $count > 0 ? $sum / $count : 0; rapor_table_cell($pdf, 72, 8, 'Nilai rata-rata'); rapor_table_cell($pdf, 20, 8, number_format($average, 1), 'C'); rapor_table_cell($pdf, 25, 8, rapor_grade($average), 'C'); rapor_table_cell($pdf, 65, 8); $pdf->Ln();
+    $pdf->SetFont('Helvetica', '', 8); $pdf->SetXY(16, 244); $pdf->Cell(80, 6, 'Catatan Wali Kelas :', 0, 0); $pdf->Cell(80, 6, 'Catatan Wali Murid :', 0, 1); $pdf->Rect(16, 250, 82, 20); $pdf->Rect(100, 250, 82, 20);
+}
+
+function rapor_tahfidh_page(RaporTemplatePDF $pdf, array $student, array $report, array $grades): void
+{
+    rapor_header($pdf, 'LAPORAN HASIL KEGIATAN TAHFIDH AL-QUR\'AN'); rapor_student_info($pdf, $student, $report, 57, false); $pdf->SetFont('Helvetica', 'B', 9);
+    rapor_table_cell($pdf, 14, 9, 'NO', 'C'); rapor_table_cell($pdf, 50, 9, 'TARGET HAFALAN', 'C'); rapor_table_cell($pdf, 22, 9, 'Hafalan', 'C'); rapor_table_cell($pdf, 42, 9, 'Fashohah & Tajwid', 'C'); rapor_table_cell($pdf, 54, 9, 'Keterangan', 'C'); $pdf->Ln(); $pdf->SetFont('Helvetica', '', 8);
+    $count = min(count($grades), 5);
+    foreach ($grades as $i => $grade) { if ($i >= 5) break; $score = (float)$grade['score']; rapor_table_cell($pdf, 14, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 50, 8, rapor_text($grade['memorization'])); rapor_table_cell($pdf, 22, 8, rapor_grade($score), 'C'); rapor_table_cell($pdf, 42, 8, rapor_grade($score), 'C'); rapor_table_cell($pdf, 54, 8, rapor_text($grade['description'])); $pdf->Ln(); }
+    for ($i = $count; $i < 5; $i++) { rapor_table_cell($pdf, 14, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 50, 8); rapor_table_cell($pdf, 22, 8); rapor_table_cell($pdf, 42, 8); rapor_table_cell($pdf, 54, 8); $pdf->Ln(); }
+    rapor_table_cell($pdf, 64, 8, "TASMI' 5 JUZ", 'C'); rapor_table_cell($pdf, 22, 8); rapor_table_cell($pdf, 42, 8); rapor_table_cell($pdf, 54, 8); $pdf->Ln();
+    $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(18, 151); $pdf->Cell(80, 6, 'GRADE  A : Melampaui Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         B : Sesuai Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         C : Belum sesuai target', 0, 1); $pdf->SetXY(115, 151); $pdf->Cell(70, 6, 'Diberikan di : Sidoarjo', 0, 1); $pdf->SetX(115); $pdf->Cell(70, 6, 'Tanggal : ' . date('d-m-Y'), 0, 1); $pdf->SetXY(115, 184); $pdf->Cell(70, 6, '(Nama)', 0, 1, 'C'); $pdf->SetXY(18, 205); $pdf->Cell(80, 6, 'Saran - saran :', 0, 1); for ($i = 1; $i <= 3; $i++) { $pdf->SetX(22); $pdf->Cell(80, 7, $i . '.', 0, 1); }
+}
+
+function rapor_arab_page(RaporTemplatePDF $pdf, array $student, array $report, array $grades): void
+{
+    rapor_header($pdf, 'LAPORAN HASIL PEMBELAJARAN BAHASA ARAB'); $pdf->SetFont('Helvetica', 'B', 12); $pdf->SetXY(14, 59); $pdf->Cell(182, 7, 'MTS ROUDLOTUL QUR\'AN', 0, 1, 'C'); $pdf->SetFont('Helvetica', 'B', 10); $pdf->SetXY(14, 68); $pdf->Cell(182, 7, 'TAHUN PELAJARAN ' . rapor_text($report['school_year'] ?? '', '2025/2026'), 0, 1, 'C'); rapor_student_info($pdf, $student, $report, 82, false); $pdf->SetY(111); $pdf->SetFont('Helvetica', 'B', 9);
+    rapor_table_cell($pdf, 18, 9, 'NO', 'C'); rapor_table_cell($pdf, 62, 9, 'Elemen', 'C'); rapor_table_cell($pdf, 30, 9, 'Nilai', 'C'); rapor_table_cell($pdf, 72, 9, 'Keterangan', 'C'); $pdf->Ln(); $pdf->SetFont('Helvetica', '', 8); $count = min(count($grades), 4);
+    foreach ($grades as $i => $grade) { if ($i >= 4) break; rapor_table_cell($pdf, 18, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 8, rapor_text($grade['subject'])); rapor_table_cell($pdf, 30, 8, number_format((float)$grade['score'], 0), 'C'); rapor_table_cell($pdf, 72, 8, rapor_text($grade['description'])); $pdf->Ln(); }
+    for ($i = $count; $i < 4; $i++) { rapor_table_cell($pdf, 18, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 8); rapor_table_cell($pdf, 30, 8); rapor_table_cell($pdf, 72, 8); $pdf->Ln(); }
+    $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(18, 166); $pdf->Cell(80, 6, 'GRADE  A : Melampaui Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         B : Sesuai Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         C : Belum sesuai target', 0, 1); $pdf->SetXY(18, 205); $pdf->Cell(80, 6, 'Saran - saran :', 0, 1); for ($i = 1; $i <= 4; $i++) { $pdf->SetX(22); $pdf->Cell(80, 7, $i . '.', 0, 1); } $pdf->SetXY(125, 166); $pdf->Cell(60, 6, 'Diberikan di : Sidoarjo', 0, 1); $pdf->SetX(125); $pdf->Cell(60, 6, 'Tanggal : ' . date('d-m-Y'), 0, 1); $pdf->SetXY(125, 220); $pdf->Cell(60, 6, '(Nama Guru/Ustadz)', 0, 1, 'C');
+}
+
+function rapor_pengembangan_page(RaporTemplatePDF $pdf, array $student, array $report): void
+{
+    rapor_header($pdf, 'PENGEMBANGAN DIRI DAN PEMBIASAAN'); rapor_student_info($pdf, $student, $report, 57, false); $pdf->SetFont('Helvetica', 'B', 9);
+    rapor_table_cell($pdf, 10, 8, 'NO', 'C'); rapor_table_cell($pdf, 75, 8, 'Jenis Kegiatan', 'C'); rapor_table_cell($pdf, 45, 8, 'Predikat', 'C'); rapor_table_cell($pdf, 52, 8, 'Keterangan', 'C'); $pdf->Ln(); $activities = ['Do\'a Harian, bacaan sholat, dan bacaan surat-surat pendek', 'Hafalan Asma\'ul Husna', 'Sholat Sunnah Dhuha Berjama\'ah', 'Sholat Fardhu Dhuhur Berjama\'ah', 'Salim kepada Bpk/Ibu guru', 'Hafal Tahlil dan Yasin', '']; $pdf->SetFont('Helvetica', '', 8);
+    foreach ($activities as $i => $activity) { rapor_table_cell($pdf, 10, 9, (string)($i + 1), 'C'); rapor_table_cell($pdf, 75, 9, $activity); rapor_table_cell($pdf, 45, 9); rapor_table_cell($pdf, 52, 9); $pdf->Ln(); }
+    $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(16, 157); $pdf->Cell(86, 8, 'Ketidakhadiran', 1, 1, 'C'); $pdf->SetFont('Helvetica', '', 8); foreach ([['S', 'Sakit'], ['I', 'Izin'], ['A', 'Tanpa Keterangan']] as $absence) { $pdf->SetX(16); rapor_table_cell($pdf, 15, 8, '(' . $absence[0] . ')', 'C'); rapor_table_cell($pdf, 50, 8, $absence[1], 'C'); rapor_table_cell($pdf, 21, 8, '-', 'C'); $pdf->Ln(); }
+    $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(110, 157); $pdf->Cell(86, 8, 'Kepribadian', 1, 1, 'C'); foreach (['Perilaku', 'Kedisiplinan', 'Kerapian/Kerajinan', 'Kesehatan'] as $i => $personality) { $pdf->SetX(110); rapor_table_cell($pdf, 12, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 52, 8, $personality); rapor_table_cell($pdf, 22, 8); $pdf->Ln(); }
+    $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(16, 201); $pdf->Cell(180, 7, 'Catatan Wali Kelas :', 1, 1); $pdf->Rect(16, 208, 180, 22); $pdf->SetXY(16, 230); $pdf->Cell(180, 7, 'Catatan Wali Murid :', 1, 1); $pdf->Rect(16, 237, 180, 22); $pdf->SetFont('Helvetica', '', 8); $pdf->SetXY(18, 267); $pdf->Cell(55, 6, 'Orang Tua/Wali siswa', 0, 0, 'C'); $pdf->Cell(60, 6, 'Wali Kelas', 0, 0, 'C'); $pdf->Cell(60, 6, 'Kepala Madrasah', 0, 1, 'C'); $pdf->SetXY(18, 284); $pdf->Cell(55, 6, '(' . rapor_text($student['nama_wali'] ?? $student['nama_ayah'] ?? '', '........................') . ')', 0, 0, 'C'); $pdf->Cell(60, 6, '(Nama Wali Kelas)', 0, 0, 'C'); $pdf->Cell(60, 6, '(Nama Kepala Sekolah)', 0, 1, 'C');
+}
+
 function generate_rapor_pdf(array $student, array $academicGrades, array $tahfidhGrades, array $report, string $dest = 'I', string $filename = 'rapor.pdf'): string
 {
-    // Clean any prior output buffer to prevent corrupted PDF streams
-    if (ob_get_level()) {
-        ob_end_clean();
-    }
-
-    $pdf = new RaporTemplatePDF('P', 'mm', 'A4');
-    $pdf->SetMargins(14, 12, 14);
-    $pdf->SetAutoPageBreak(true, 14);
-    $pdf->AddPage();
-
-    // 1. TOP HEADER
-    // Left: School Name and Emblem
-    $pdf->SetFont('Helvetica', 'B', 10);
-    $pdf->SetTextColor(18, 99, 54); // #126336
-    $pdf->SetXY(14, 12);
-    $pdf->Cell(110, 5, "YAYASAN ROUDLOTUL QUR'AN AZ ZUHRI", 0, 1, 'L');
-    
-    $pdf->SetFont('Helvetica', 'B', 13.5);
-    $pdf->SetTextColor(12, 67, 37); // #0C4325
-    $pdf->SetX(14);
-    $pdf->Cell(110, 6, "MTS TAHFIDH ROUDLOTUL QUR'AN", 0, 1, 'L');
-    
-    $pdf->SetFont('Helvetica', '', 8);
-    $pdf->SetTextColor(80, 105, 90);
-    $pdf->SetX(14);
-    $pdf->Cell(110, 4.5, "Desa Ngampelsari Rt. 03 Rw. 01, Candi, Sidoarjo | mtstahfidhroudlotulquran.sch.id", 0, 1, 'L');
-
-    // Right: Dark Green Box "Rapor Sekolah"
-    $pdf->SetFillColor(21, 122, 66); // #157A42
-    $pdf->Rect(138, 12, 58, 14, 'F');
-    $pdf->SetFont('Helvetica', 'B', 12.5);
-    $pdf->SetTextColor(255, 255, 255);
-    $pdf->SetXY(138, 12);
-    $pdf->Cell(58, 14, "Rapor Sekolah", 0, 1, 'C');
-
-    // Decorative Horizontal Line
-    $pdf->SetDrawColor(21, 122, 66);
-    $pdf->SetLineWidth(0.6);
-    $pdf->Line(14, 29, 196, 29);
-
-    // 2. STUDENT METADATA (Underlined style matching reference)
-    $pdf->SetY(32);
-    $pdf->SetFont('Helvetica', '', 8.5);
-    $pdf->SetTextColor(30, 45, 35);
-
-    $semesterNum = (int)($report['semester'] ?? 2);
-    $semText = ($semesterNum === 1) ? 'Semester 1 (Ganjil)' : 'Semester 2 (Genap)';
-    $schoolYear = $report['school_year'] ?? '2025/2026';
-    $studentName = $student['nama'] ?? '-';
-    $studentKelas = $student['kelas'] ?? 'VII';
-    $studentNisn = $student['nisn'] ?? '-';
-
-    // Row 1
-    $pdf->SetX(14);
-    $pdf->Cell(24, 5, "Nama Siswa:", 0, 0);
-    $pdf->SetFont('Helvetica', 'B', 8.5);
-    $pdf->Cell(68, 5, $studentName, 'B', 0);
-    
-    $pdf->SetFont('Helvetica', '', 8.5);
-    $pdf->Cell(28, 5, "Periode Evaluasi:", 0, 0);
-    $pdf->SetFont('Helvetica', 'B', 8.5);
-    $pdf->Cell(62, 5, $semText, 'B', 1);
-
-    // Row 2
-    $pdf->SetX(14);
-    $pdf->SetFont('Helvetica', '', 8.5);
-    $pdf->Cell(24, 5, "Kelas & NISN:", 0, 0);
-    $pdf->SetFont('Helvetica', 'B', 8.5);
-    $pdf->Cell(68, 5, "Kelas " . $studentKelas . "  |  NISN: " . $studentNisn, 'B', 0);
-    
-    $pdf->SetFont('Helvetica', '', 8.5);
-    $pdf->Cell(28, 5, "Tahun Ajar:", 0, 0);
-    $pdf->SetFont('Helvetica', 'B', 8.5);
-    $pdf->Cell(62, 5, $schoolYear, 'B', 1);
-
-    // Row 3
-    $pdf->SetX(14);
-    $pdf->SetFont('Helvetica', '', 8.5);
-    $pdf->Cell(24, 5, "Wali Kelas:", 0, 0);
-    $pdf->SetFont('Helvetica', 'B', 8.5);
-    $pdf->Cell(68, 5, "Ustadzah Siti Fatimah, S.Pd", 'B', 0);
-    
-    $pdf->SetFont('Helvetica', '', 8.5);
-    $pdf->Cell(28, 5, "Status Rapor:", 0, 0);
-    $pdf->SetFont('Helvetica', 'B', 8.5);
-    $pdf->Cell(62, 5, "Resmi Dipublikasikan", 'B', 1);
-
-    $pdf->Ln(4);
-
-    // 3. TWO-COLUMN LAYOUT
-    $topContentY = $pdf->GetY();
-    $leftWidth = 120;
-    $rightWidth = 58;
-    $rightX = 138;
-
-    // ==========================================
-    // RIGHT COLUMN: Sistem Penilaian & Tanggapan Guru
-    // ==========================================
-    $pdf->SetXY($rightX, $topContentY);
-
-    // Header Sistem Penilaian
-    $pdf->SetFillColor(198, 235, 211); // Soft mint #C6EBD3
-    $pdf->SetFont('Helvetica', 'B', 8.5);
-    $pdf->SetTextColor(12, 67, 37);
-    $pdf->Cell($rightWidth, 6, "Sistem Penilaian:", 0, 1, 'C', true);
-
-    // Tabel Konversi Nilai
-    $gradingScale = [
-        ['A+', '97 - 100'],
-        ['A',  '94 - 96'],
-        ['A-', '90 - 93'],
-        ['B+', '87 - 89'],
-        ['B',  '84 - 86'],
-        ['B-', '80 - 83'],
-        ['C+', '77 - 79'],
-        ['C',  '74 - 76'],
-        ['C-', '70 - 73'],
-        ['D+', '67 - 69'],
-        ['D',  '64 - 66'],
-        ['D-', '60 - 63'],
-        ['F',  'Di bawah 60'],
-    ];
-
-    $pdf->SetFont('Helvetica', '', 7.5);
-    $fillRow = false;
-    foreach ($gradingScale as $scale) {
-        $pdf->SetX($rightX);
-        if ($fillRow) {
-            $pdf->SetFillColor(245, 250, 247);
-        } else {
-            $pdf->SetFillColor(255, 255, 255);
-        }
-        $pdf->SetTextColor(30, 45, 35);
-        $pdf->Cell(24, 4.2, $scale[0], 0, 0, 'C', true);
-        $pdf->Cell(34, 4.2, $scale[1], 0, 1, 'C', true);
-        $fillRow = !$fillRow;
-    }
-
-    $pdf->Ln(3);
-    $pdf->SetX($rightX);
-
-    // Header Tanggapan dan Masukan Guru
-    $pdf->SetFillColor(198, 235, 211);
-    $pdf->SetFont('Helvetica', 'B', 8.5);
-    $pdf->SetTextColor(12, 67, 37);
-    $pdf->Cell($rightWidth, 6, "Tanggapan dan Masukan Guru:", 0, 1, 'L', true);
-
-    // Box Isi Tanggapan
-    $catatanGuru = "Alhamdulillah, ananda menunjukkan kesungguhan yang baik dalam memahami materi akademik dan setoran hafalan Al-Qur'an. Terus tingkatkan muraja'ah rutin dan kedisiplinan belajar.";
-    $pdf->MultiCellBox($rightX, $pdf->GetY(), $rightWidth, 3.8, $catatanGuru);
-
-    $rightEndY = $pdf->GetY();
-
-    // ==========================================
-    // LEFT COLUMN: Mata Pelajaran & Tahfidh & Kehadiran
-    // ==========================================
-    $pdf->SetXY(14, $topContentY);
-
-    // Header Tabel Akademik
-    $pdf->SetFillColor(21, 122, 66); // Dark green #157A42
-    $pdf->SetTextColor(255, 255, 255);
-    $pdf->SetFont('Helvetica', 'B', 8);
-    
-    $pdf->Cell(58, 6, "Mata Pelajaran", 0, 0, 'L', true);
-    $pdf->Cell(20, 6, "Nilai", 0, 0, 'C', true);
-    $pdf->Cell(20, 6, "Predikat", 0, 0, 'C', true);
-    $pdf->Cell(22, 6, "Keterangan", 0, 1, 'C', true);
-
-    $pdf->SetFont('Helvetica', '', 7.5);
-    $pdf->SetTextColor(30, 45, 35);
-    $fillAcad = true;
-
-    $totalScore = 0.0;
-    $countScore = 0;
-
-    if (!empty($academicGrades)) {
-        foreach ($academicGrades as $g) {
-            $pdf->SetX(14);
-            if ($fillAcad) {
-                $pdf->SetFillColor(242, 248, 244);
-            } else {
-                $pdf->SetFillColor(255, 255, 255);
-            }
-            
-            $scoreNum = (float)$g['score'];
-            $totalScore += $scoreNum;
-            $countScore++;
-
-            // Predikat
-            $p = 'D';
-            if ($scoreNum >= 97) $p = 'A+';
-            elseif ($scoreNum >= 94) $p = 'A';
-            elseif ($scoreNum >= 90) $p = 'A-';
-            elseif ($scoreNum >= 87) $p = 'B+';
-            elseif ($scoreNum >= 84) $p = 'B';
-            elseif ($scoreNum >= 80) $p = 'B-';
-            elseif ($scoreNum >= 77) $p = 'C+';
-            elseif ($scoreNum >= 74) $p = 'C';
-            elseif ($scoreNum >= 70) $p = 'C-';
-            elseif ($scoreNum >= 67) $p = 'D+';
-            elseif ($scoreNum >= 64) $p = 'D';
-            elseif ($scoreNum >= 60) $p = 'D-';
-            else $p = 'F';
-
-            $pdf->Cell(58, 4.3, " " . mb_substr($g['subject'], 0, 32), 0, 0, 'L', true);
-            $pdf->Cell(20, 4.3, number_format($scoreNum, 1), 0, 0, 'C', true);
-            $pdf->Cell(20, 4.3, $p, 0, 0, 'C', true);
-            $pdf->Cell(22, 4.3, ($scoreNum >= 70 ? 'Tuntas' : 'Perlu Bimb.'), 0, 1, 'C', true);
-
-            $fillAcad = !$fillAcad;
-        }
-    } else {
-        $pdf->SetX(14);
-        $pdf->Cell($leftWidth, 6, "Belum ada nilai akademik tersimpan.", 1, 1, 'C');
-    }
-
-    $pdf->Ln(2.5);
-
-    // Section Tahfidh
-    $pdf->SetX(14);
-    $pdf->SetFillColor(21, 122, 66);
-    $pdf->SetTextColor(255, 255, 255);
-    $pdf->SetFont('Helvetica', 'B', 8);
-    $pdf->Cell(58, 6, "Capaian Tahfidh Al-Qur'an", 0, 0, 'L', true);
-    $pdf->Cell(20, 6, "Nilai", 0, 0, 'C', true);
-    $pdf->Cell(20, 6, "Predikat", 0, 0, 'C', true);
-    $pdf->Cell(22, 6, "Keterangan", 0, 1, 'C', true);
-
-    $pdf->SetFont('Helvetica', '', 7.5);
-    $pdf->SetTextColor(30, 45, 35);
-    $fillTah = true;
-
-    if (!empty($tahfidhGrades)) {
-        foreach ($tahfidhGrades as $t) {
-            $pdf->SetX(14);
-            if ($fillTah) {
-                $pdf->SetFillColor(242, 248, 244);
-            } else {
-                $pdf->SetFillColor(255, 255, 255);
-            }
-
-            $tScore = (float)$t['score'];
-            $pT = 'D';
-            if ($tScore >= 90) $pT = 'A';
-            elseif ($tScore >= 80) $pT = 'B';
-            elseif ($tScore >= 70) $pT = 'C';
-
-            $pdf->Cell(58, 4.3, " " . mb_substr($t['memorization'], 0, 32), 0, 0, 'L', true);
-            $pdf->Cell(20, 4.3, number_format($tScore, 1), 0, 0, 'C', true);
-            $pdf->Cell(20, 4.3, $pT, 0, 0, 'C', true);
-            $pdf->Cell(22, 4.3, ($tScore >= 75 ? 'Mutqin' : 'Jayyid'), 0, 1, 'C', true);
-
-            $fillTah = !$fillTah;
-        }
-    } else {
-        $pdf->SetX(14);
-        $pdf->Cell($leftWidth, 5, "Belum ada capaian tahfidh tersimpan.", 1, 1, 'C');
-    }
-
-    $pdf->Ln(2.5);
-
-    // Section Kehadiran & Nilai Rata-Rata
-    $pdf->SetX(14);
-    $pdf->SetFillColor(21, 122, 66);
-    $pdf->SetTextColor(255, 255, 255);
-    $pdf->SetFont('Helvetica', 'B', 8);
-    $pdf->Cell($leftWidth, 5.5, "Kehadiran & Ringkasan Nilai", 0, 1, 'L', true);
-
-    $pdf->SetFont('Helvetica', '', 7.5);
-    $pdf->SetTextColor(30, 45, 35);
-    $pdf->SetFillColor(242, 248, 244);
-
-    $avgScore = $countScore > 0 ? ($totalScore / $countScore) : 0.0;
-
-    $pdf->SetX(14);
-    $pdf->Cell(38, 4.5, " Jum. Hari Sekolah: 112 Hari", 0, 0, 'L', true);
-    $pdf->Cell(28, 4.5, "Hadir: 110 Hari", 0, 0, 'L', true);
-    $pdf->Cell(26, 4.5, "Izin: 2 Hari", 0, 0, 'L', true);
-    $pdf->Cell(28, 4.5, "Sakit: 0 Hari", 0, 1, 'L', true);
-
-    $pdf->SetX(14);
-    $pdf->SetFillColor(255, 255, 255);
-    $pdf->SetFont('Helvetica', 'B', 7.5);
-    $pdf->Cell(58, 4.5, " Nilai Rata-Rata: " . number_format($avgScore, 1), 0, 0, 'L', true);
-    $pdf->Cell(62, 4.5, "Status: TUNTAS & MEMENUHI SYARAT", 0, 1, 'L', true);
-
-    $leftEndY = $pdf->GetY();
-
-    // 4. SIGNATURES SECTION
-    $sigY = max($leftEndY, $rightEndY) + 5;
-    $pdf->SetY($sigY);
-
-    $todayDate = date('d F Y');
-    $bulanIndo = [
-        'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
-        'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
-        'July' => 'Juli', 'August' => 'Agustus', 'September' => 'September',
-        'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
-    ];
-    $formattedDate = strtr(date('d F Y'), $bulanIndo);
-
-    $pdf->SetFont('Helvetica', '', 8);
-    $pdf->SetTextColor(30, 45, 35);
-
-    $pdf->Cell(60, 4.5, "Mengetahui,", 0, 0, 'C');
-    $pdf->Cell(62, 4.5, "", 0, 0, 'C');
-    $pdf->Cell(60, 4.5, "Sidoarjo, " . $formattedDate, 0, 1, 'C');
-
-    $pdf->Cell(60, 4.5, "Orang Tua / Wali Siswa", 0, 0, 'C');
-    $pdf->Cell(62, 4.5, "Kepala Madrasah", 0, 0, 'C');
-    $pdf->Cell(60, 4.5, "Wali Kelas " . $studentKelas, 0, 1, 'C');
-
-    $pdf->Ln(13);
-
-    $pdf->SetFont('Helvetica', 'B', 8);
-    $guardianName = !empty($student['nama_ayah']) ? $student['nama_ayah'] : (!empty($student['nama_ibu']) ? $student['nama_ibu'] : '...............................');
-    $pdf->Cell(60, 4.5, "( " . $guardianName . " )", 0, 0, 'C');
-    $pdf->Cell(62, 4.5, "( H. Ahmad Fauzi, S.Pd.I, M.Pd )", 0, 0, 'C');
-    $pdf->Cell(60, 4.5, "( Ustadzah Siti Fatimah, S.Pd )", 0, 1, 'C');
-
-    // Output with proper headers
-    if ($dest === 'I' || $dest === 'D') {
-        if (!headers_sent()) {
-            header('Content-Type: application/pdf');
-            header('Content-Disposition: ' . ($dest === 'D' ? 'attachment' : 'inline') . '; filename="' . $filename . '"');
-            header('Cache-Control: private, max-age=0, must-revalidate');
-            header('Pragma: public');
-        }
-    }
-
+    if (ob_get_level()) ob_end_clean();
+    $pdf = new RaporTemplatePDF('P', 'mm', 'A4'); $pdf->SetMargins(14, 10, 14); $pdf->SetAutoPageBreak(false);
+    $pdf->AddPage(); rapor_biodata($pdf, $student);
+    $pdf->AddPage(); rapor_academic_page($pdf, $student, $report, $academicGrades, 'LAPORAN HASIL BELAJAR SEMESTER');
+    $pdf->AddPage(); rapor_academic_page($pdf, $student, $report, $academicGrades, 'HASIL SUMATIF TENGAH SEMESTER');
+    $arabicGrades = array_values(array_filter($academicGrades, static fn(array $grade): bool => stripos((string)$grade['subject'], 'arab') !== false));
+    $pdf->AddPage(); rapor_arab_page($pdf, $student, $report, $arabicGrades);
+    $pdf->AddPage(); rapor_tahfidh_page($pdf, $student, $report, $tahfidhGrades);
+    $pdf->AddPage(); rapor_pengembangan_page($pdf, $student, $report);
+    if ($dest === 'I' || $dest === 'D') { if (!headers_sent()) { header('Content-Type: application/pdf'); header('Content-Disposition: ' . ($dest === 'D' ? 'attachment' : 'inline') . '; filename="' . $filename . '"'); header('Cache-Control: private, max-age=0, must-revalidate'); header('Pragma: public'); } }
     return $pdf->Output($dest, $filename);
 }

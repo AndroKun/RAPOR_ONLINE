@@ -14,8 +14,9 @@ $schoolYear = trim($_GET['school_year'] ?? '2025/2026');
 $data = null;
 
 if ($reportId) {
-    $stmt = $pdo->prepare("SELECT r.*, s.nama, s.nis, s.nisn, s.kelas, s.tempat_lahir, s.tanggal_lahir,
-                                  g.nama_ayah, g.nama_ibu, g.nama_wali 
+    $stmt = $pdo->prepare("SELECT r.*, s.*, s.id AS student_id,
+                                  g.nama_ayah, g.nama_ibu, g.alamat_orang_tua, g.pekerjaan_ayah, g.pekerjaan_ibu,
+                                  g.nama_wali, g.alamat_wali, g.pekerjaan_wali
                            FROM reports r
                            INNER JOIN students s ON s.id = r.student_id
                            LEFT JOIN guardians g ON g.student_id = s.id
@@ -24,7 +25,8 @@ if ($reportId) {
     $stmt->execute(['id' => $reportId]);
     $data = $stmt->fetch();
 } elseif ($studentId) {
-    $stmt = $pdo->prepare("SELECT s.*, s.id AS student_id, g.nama_ayah, g.nama_ibu, g.nama_wali,
+    $stmt = $pdo->prepare("SELECT s.*, s.id AS student_id, g.nama_ayah, g.nama_ibu, g.alamat_orang_tua, g.pekerjaan_ayah, g.pekerjaan_ibu,
+                                  g.nama_wali, g.alamat_wali, g.pekerjaan_wali,
                                   r.id AS report_id, r.status, r.published_at 
                            FROM students s
                            LEFT JOIN guardians g ON g.student_id = s.id
@@ -52,15 +54,7 @@ if (!$data) {
     exit;
 }
 
-$student = [
-    'nama' => $data['nama'],
-    'nis' => $data['nis'],
-    'nisn' => $data['nisn'],
-    'kelas' => $data['kelas'],
-    'nama_ayah' => $data['nama_ayah'],
-    'nama_ibu' => $data['nama_ibu'],
-    'nama_wali' => $data['nama_wali'],
-];
+    $student = $data;
 
 $report = [
     'semester' => (int)$data['semester'],

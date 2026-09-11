@@ -312,9 +312,9 @@ require_once __DIR__ . '/../../includes/header.php';
                     $predClass = '';
                     if ($valScore !== '') {
                         $sNum = (float)$valScore;
-                        if ($sNum >= 90) { $pred = 'A'; $predClass = 'p-a'; }
-                        elseif ($sNum >= 80) { $pred = 'B'; $predClass = 'p-b'; }
-                        elseif ($sNum >= 70) { $pred = 'C'; $predClass = 'p-c'; }
+                        if ($sNum >= 91) { $pred = 'A'; $predClass = 'p-a'; }
+                        elseif ($sNum >= 81) { $pred = 'B'; $predClass = 'p-b'; }
+                        elseif ($sNum >= 71) { $pred = 'C'; $predClass = 'p-c'; }
                         else { $pred = 'D'; $predClass = 'p-d'; }
                     }
                 ?>
@@ -399,9 +399,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return { label: '–', cls: '' };
         }
         const num = Number(scoreVal);
-        if (num >= 90) return { label: 'A', cls: 'p-a' };
-        if (num >= 80) return { label: 'B', cls: 'p-b' };
-        if (num >= 70) return { label: 'C', cls: 'p-c' };
+        if (num >= 91) return { label: 'A', cls: 'p-a' };
+        if (num >= 81) return { label: 'B', cls: 'p-b' };
+        if (num >= 71) return { label: 'C', cls: 'p-c' };
         return { label: 'D', cls: 'p-d' };
     }
 

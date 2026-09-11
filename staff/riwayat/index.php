@@ -458,9 +458,9 @@ require_once __DIR__ . '/../../includes/header.php';
                         
                         $pred = '–';
                         $predClass = '';
-                        if ($score >= 90) { $pred = 'A'; $predClass = 'p-a'; }
-                        elseif ($score >= 80) { $pred = 'B'; $predClass = 'p-b'; }
-                        elseif ($score >= 70) { $pred = 'C'; $predClass = 'p-c'; }
+                        if ($score >= 91) { $pred = 'A'; $predClass = 'p-a'; }
+                        elseif ($score >= 81) { $pred = 'B'; $predClass = 'p-b'; }
+                        elseif ($score >= 71) { $pred = 'C'; $predClass = 'p-c'; }
                         else { $pred = 'D'; $predClass = 'p-d'; }
 
                         $waktuFormatted = !empty($row['updated_at']) ? date('d/m/Y H:i', strtotime($row['updated_at'])) : '-';

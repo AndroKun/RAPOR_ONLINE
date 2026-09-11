@@ -127,9 +127,9 @@ require_once __DIR__ . '/../../includes/header.php';
                     foreach ($academicGrades as $g): 
                         $score = (float)$g['score'];
                         $totalScore += $score;
-                        if ($score >= 90) $predikat = 'A (Sangat Baik)';
-                        elseif ($score >= 80) $predikat = 'B (Baik)';
-                        elseif ($score >= 70) $predikat = 'C (Cukup)';
+                        if ($score >= 91) $predikat = 'A (Sangat Baik)';
+                        elseif ($score >= 81) $predikat = 'B (Baik)';
+                        elseif ($score >= 71) $predikat = 'C (Cukup)';
                         else $predikat = 'D (Perlu Bimbingan)';
                     ?>
                         <tr>
@@ -137,7 +137,7 @@ require_once __DIR__ . '/../../includes/header.php';
                             <td><strong><?= e($g['subject']) ?></strong></td>
                             <td style="text-align:center; font-weight:bold;"><?= number_format($score, 1) ?></td>
                             <td style="text-align:center;"><?= $predikat ?></td>
-                            <td><?= e($g['description'] ?: 'Tuntas mencapai KKM') ?></td>
+                            <td><?= e($g['description'] ?: ($score >= 91 ? 'Sangat Baik' : ($score >= 81 ? 'Baik' : ($score >= 71 ? 'Cukup' : 'Perlu Bimbingan')))) ?></td>
                         </tr>
                     <?php endforeach; ?>
                     <tr style="background:#f1f5f9; font-weight:bold;">

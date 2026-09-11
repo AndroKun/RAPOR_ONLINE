@@ -194,9 +194,9 @@ require_once __DIR__ . '/../../includes/header.php';
                         $pred = '–';
                         $predClass = '';
                         if ($tScore !== null) {
-                            if ($tScore >= 90) { $pred = 'A'; $predClass = 'p-a'; }
-                            elseif ($tScore >= 80) { $pred = 'B'; $predClass = 'p-b'; }
-                            elseif ($tScore >= 70) { $pred = 'C'; $predClass = 'p-c'; }
+                            if ($tScore >= 91) { $pred = 'A'; $predClass = 'p-a'; }
+                            elseif ($tScore >= 81) { $pred = 'B'; $predClass = 'p-b'; }
+                            elseif ($tScore >= 71) { $pred = 'C'; $predClass = 'p-c'; }
                             else { $pred = 'D'; $predClass = 'p-d'; }
                         }
                     ?>

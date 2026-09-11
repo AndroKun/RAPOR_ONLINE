@@ -27,10 +27,18 @@ function rapor_text(mixed $value, string $fallback = ''): string
 
 function rapor_grade(float $score): string
 {
-    if ($score >= 90) return 'A';
-    if ($score >= 80) return 'B';
-    if ($score >= 70) return 'C';
+    if ($score >= 91) return 'A';
+    if ($score >= 81) return 'B';
+    if ($score >= 71) return 'C';
     return 'D';
+}
+
+function rapor_description(float $score): string
+{
+    if ($score >= 91) return 'Sangat Baik';
+    if ($score >= 81) return 'Baik';
+    if ($score >= 71) return 'Cukup';
+    return 'Perlu Bimbingan';
 }
 
 function rapor_header(RaporTemplatePDF $pdf, string $title, bool $formal = false): void
@@ -111,7 +119,7 @@ function rapor_academic_page(RaporTemplatePDF $pdf, array $student, array $repor
     $pdf->SetFont('Helvetica', '', 8); $sum = 0.0; $count = min(count($grades), 18);
     foreach ($grades as $i => $grade) {
         if ($i >= 18) break; $score = (float)$grade['score']; $sum += $score;
-        rapor_table_cell($pdf, 10, 7, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 7, rapor_text($grade['subject'])); rapor_table_cell($pdf, 20, 7, number_format($score, 0), 'C'); rapor_table_cell($pdf, 25, 7, rapor_grade($score), 'C'); rapor_table_cell($pdf, 65, 7, rapor_text($grade['description'])); $pdf->Ln();
+        rapor_table_cell($pdf, 10, 7, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 7, rapor_text($grade['subject'])); rapor_table_cell($pdf, 20, 7, number_format($score, 0), 'C'); rapor_table_cell($pdf, 25, 7, rapor_grade($score), 'C'); rapor_table_cell($pdf, 65, 7, rapor_text($grade['description'], rapor_description($score))); $pdf->Ln();
     }
     for ($i = $count; $i < 18; $i++) { rapor_table_cell($pdf, 10, 7, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 7); rapor_table_cell($pdf, 20, 7); rapor_table_cell($pdf, 25, 7); rapor_table_cell($pdf, 65, 7); $pdf->Ln(); }
     $average = $count > 0 ? $sum / $count : 0; rapor_table_cell($pdf, 72, 8, 'Nilai rata-rata'); rapor_table_cell($pdf, 20, 8, number_format($average, 1), 'C'); rapor_table_cell($pdf, 25, 8, rapor_grade($average), 'C'); rapor_table_cell($pdf, 65, 8); $pdf->Ln();
@@ -123,7 +131,7 @@ function rapor_tahfidh_page(RaporTemplatePDF $pdf, array $student, array $report
     rapor_header($pdf, 'LAPORAN HASIL KEGIATAN TAHFIDH AL-QUR\'AN'); rapor_student_info($pdf, $student, $report, 57, false); $pdf->SetFont('Helvetica', 'B', 9);
     rapor_table_cell($pdf, 14, 9, 'NO', 'C'); rapor_table_cell($pdf, 50, 9, 'TARGET HAFALAN', 'C'); rapor_table_cell($pdf, 22, 9, 'Hafalan', 'C'); rapor_table_cell($pdf, 42, 9, 'Fashohah & Tajwid', 'C'); rapor_table_cell($pdf, 54, 9, 'Keterangan', 'C'); $pdf->Ln(); $pdf->SetFont('Helvetica', '', 8);
     $count = min(count($grades), 5);
-    foreach ($grades as $i => $grade) { if ($i >= 5) break; $score = (float)$grade['score']; rapor_table_cell($pdf, 14, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 50, 8, rapor_text($grade['memorization'])); rapor_table_cell($pdf, 22, 8, rapor_grade($score), 'C'); rapor_table_cell($pdf, 42, 8, rapor_grade($score), 'C'); rapor_table_cell($pdf, 54, 8, rapor_text($grade['description'])); $pdf->Ln(); }
+    foreach ($grades as $i => $grade) { if ($i >= 5) break; $score = (float)$grade['score']; rapor_table_cell($pdf, 14, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 50, 8, rapor_text($grade['memorization'])); rapor_table_cell($pdf, 22, 8, rapor_grade($score), 'C'); rapor_table_cell($pdf, 42, 8, rapor_grade($score), 'C'); rapor_table_cell($pdf, 54, 8, rapor_text($grade['description'], rapor_description($score))); $pdf->Ln(); }
     for ($i = $count; $i < 5; $i++) { rapor_table_cell($pdf, 14, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 50, 8); rapor_table_cell($pdf, 22, 8); rapor_table_cell($pdf, 42, 8); rapor_table_cell($pdf, 54, 8); $pdf->Ln(); }
     rapor_table_cell($pdf, 64, 8, "TASMI' 5 JUZ", 'C'); rapor_table_cell($pdf, 22, 8); rapor_table_cell($pdf, 42, 8); rapor_table_cell($pdf, 54, 8); $pdf->Ln();
     $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(18, 151); $pdf->Cell(80, 6, 'GRADE  A : Melampaui Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         B : Sesuai Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         C : Belum sesuai target', 0, 1); $pdf->SetXY(115, 151); $pdf->Cell(70, 6, 'Diberikan di : Sidoarjo', 0, 1); $pdf->SetX(115); $pdf->Cell(70, 6, 'Tanggal : ' . date('d-m-Y'), 0, 1); $pdf->SetXY(115, 184); $pdf->Cell(70, 6, '(Nama)', 0, 1, 'C'); $pdf->SetXY(18, 205); $pdf->Cell(80, 6, 'Saran - saran :', 0, 1); for ($i = 1; $i <= 3; $i++) { $pdf->SetX(22); $pdf->Cell(80, 7, $i . '.', 0, 1); }

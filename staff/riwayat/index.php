@@ -15,6 +15,123 @@ $isGuruTahfidh = ($userRole === 'guru_tahfidh');
 $isGuruMapel = ($userRole === 'staff');
 $teacherMapel = trim((string)($user['mata_pelajaran'] ?? ''));
 
+// Handle POST request untuk Hapus Riwayat Nilai
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_history') {
+    verify_csrf();
+
+    $deleteId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+    $deleteType = trim($_POST['tipe'] ?? '');
+
+    if ($deleteId && in_array($deleteType, ['akademik', 'tahfidh'], true)) {
+        try {
+            $pdo->beginTransaction();
+
+            $studentId = null;
+            $semester = null;
+            $schoolYear = null;
+            $itemName = '';
+            $studentName = '';
+
+            if ($deleteType === 'akademik') {
+                if (!$isAdmin) {
+                    if (!$isGuruMapel || empty($teacherMapel)) {
+                        throw new Exception("Anda tidak memiliki izin untuk menghapus nilai ini.");
+                    }
+                    $stmtCheck = $pdo->prepare("
+                        SELECT ag.student_id, ag.subject, ag.semester, ag.school_year, s.nama 
+                        FROM academic_grades ag
+                        JOIN students s ON s.id = ag.student_id
+                        WHERE ag.id = :id AND ag.subject = :subj 
+                        LIMIT 1
+                    ");
+                    $stmtCheck->execute(['id' => $deleteId, 'subj' => $teacherMapel]);
+                } else {
+                    $stmtCheck = $pdo->prepare("
+                        SELECT ag.student_id, ag.subject, ag.semester, ag.school_year, s.nama 
+                        FROM academic_grades ag
+                        JOIN students s ON s.id = ag.student_id
+                        WHERE ag.id = :id 
+                        LIMIT 1
+                    ");
+                    $stmtCheck->execute(['id' => $deleteId]);
+                }
+                $record = $stmtCheck->fetch();
+                if (!$record) {
+                    throw new Exception("Data riwayat nilai akademik tidak ditemukan atau Anda tidak memiliki akses.");
+                }
+
+                $studentId = (int)$record['student_id'];
+                $semester = (int)$record['semester'];
+                $schoolYear = (string)$record['school_year'];
+                $itemName = (string)$record['subject'];
+                $studentName = (string)$record['nama'];
+
+                $stmtDel = $pdo->prepare("DELETE FROM academic_grades WHERE id = :id");
+                $stmtDel->execute(['id' => $deleteId]);
+            } else {
+                // Tahfidh
+                if (!$isAdmin && !$isGuruTahfidh) {
+                    throw new Exception("Anda tidak memiliki izin untuk menghapus riwayat nilai tahfidh.");
+                }
+
+                $stmtCheck = $pdo->prepare("
+                    SELECT tg.student_id, tg.memorization, tg.semester, tg.school_year, s.nama 
+                    FROM tahfidh_grades tg
+                    JOIN students s ON s.id = tg.student_id
+                    WHERE tg.id = :id 
+                    LIMIT 1
+                ");
+                $stmtCheck->execute(['id' => $deleteId]);
+                $record = $stmtCheck->fetch();
+                if (!$record) {
+                    throw new Exception("Data riwayat tahfidh tidak ditemukan.");
+                }
+
+                $studentId = (int)$record['student_id'];
+                $semester = (int)$record['semester'];
+                $schoolYear = (string)$record['school_year'];
+                $itemName = (string)$record['memorization'];
+                $studentName = (string)$record['nama'];
+
+                $stmtDel = $pdo->prepare("DELETE FROM tahfidh_grades WHERE id = :id");
+                $stmtDel->execute(['id' => $deleteId]);
+            }
+
+            // Update status rapor siswa
+            if ($studentId && $semester && $schoolYear) {
+                $stmtAcademic = $pdo->prepare("SELECT COUNT(*) FROM academic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
+                $stmtAcademic->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+                $totalAcademic = (int)$stmtAcademic->fetchColumn();
+
+                $stmtTahfidh = $pdo->prepare("SELECT COUNT(*) FROM tahfidh_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
+                $stmtTahfidh->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+                $hasTahfidh = (int)$stmtTahfidh->fetchColumn() > 0;
+
+                $newStatus = ($totalAcademic >= 5 && $hasTahfidh) ? 'ready' : 'draft';
+
+                $stmtRep = $pdo->prepare("
+                    INSERT INTO reports (student_id, semester, school_year, status) 
+                    VALUES (:sid, :sem, :sy, :status) 
+                    ON DUPLICATE KEY UPDATE status = CASE WHEN status = 'published' THEN 'published' ELSE VALUES(status) END
+                ");
+                $stmtRep->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear, 'status' => $newStatus]);
+            }
+
+            $pdo->commit();
+            set_flash('success', "Riwayat nilai '{$itemName}' untuk {$studentName} berhasil dihapus.");
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            set_flash('danger', "Gagal menghapus data: " . $e->getMessage());
+        }
+    }
+
+    // Preserve filter parameters on redirect
+    $redirectQuery = $_GET;
+    unset($redirectQuery['action'], $redirectQuery['id'], $redirectQuery['tipe'], $redirectQuery['_csrf_token']);
+    $url = '/staff/riwayat/index.php' . (!empty($redirectQuery) ? '?' . http_build_query($redirectQuery) : '');
+    redirect($url);
+}
+
 $pageTitle = 'Riwayat Pengisian Nilai - MTs Roudlotul Qur\'an';
 $activeMenu = 'riwayat';
 
@@ -79,7 +196,6 @@ $params = [];
 
 // ACADEMIC QUERY SECTION (Only for Admin or Guru Mapel)
 if ($isAdmin || $isGuruMapel) {
-    // If admin chose tahfidh only in filter, skip academic
     if (!($isAdmin && $kategoriFilter === 'tahfidh')) {
         $acadSql = "
             SELECT 
@@ -101,7 +217,6 @@ if ($isAdmin || $isGuruMapel) {
             WHERE 1=1
         ";
 
-        // If Guru Mapel, lock strictly to their subject
         if ($isGuruMapel) {
             $acadSql .= " AND ag.subject = :lock_subject";
             $params['lock_subject'] = $teacherMapel;
@@ -133,7 +248,6 @@ if ($isAdmin || $isGuruMapel) {
 
 // TAHFIDH QUERY SECTION (Only for Admin or Guru Tahfidh)
 if ($isAdmin || $isGuruTahfidh) {
-    // If admin chose akademik only in filter, skip tahfidh
     if (!($isAdmin && $kategoriFilter === 'akademik')) {
         $tahfSql = "
             SELECT 
@@ -187,10 +301,6 @@ if (!empty($sqlParts)) {
     $stmtHistory->execute($params);
     $historyRows = $stmtHistory->fetchAll();
 }
-
-// List kelas unik
-$stmtKelas = $pdo->query("SELECT DISTINCT kelas FROM students ORDER BY kelas ASC");
-$kelasList = $stmtKelas->fetchAll(PDO::FETCH_COLUMN);
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -254,7 +364,7 @@ require_once __DIR__ . '/../../includes/header.php';
             </h2>
             <p class="section-hint" style="margin: 2px 0 0;">
                 <?php if ($isAdmin): ?>
-                    Menampilkan 150 transaksi pembaruan nilai terkini dari seluruh mata pelajaran dan tahfidh.
+                    Menampilkan 200 transaksi pembaruan nilai terkini dari seluruh mata pelajaran dan tahfidh.
                 <?php elseif ($isGuruTahfidh): ?>
                     Menampilkan riwayat penilaian setoran tahfidh Al-Qur'an siswa yang telah diinput.
                 <?php else: ?>
@@ -267,7 +377,7 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 
-    <!-- Filter Form -->
+    <!-- Filter & Toolbar Form -->
     <form method="GET" action="" class="filters" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
         <div style="flex: 1; min-width: 200px;">
             <input type="text" id="liveSearchRiwayat" name="q" value="<?= e($search) ?>" placeholder="🔍 Ketik nama siswa atau NISN (pencarian otomatis)..." autofocus>
@@ -308,9 +418,14 @@ require_once __DIR__ . '/../../includes/header.php';
             </select>
         </div>
 
-        <button type="submit" class="btn btn-primary" style="padding: 9px 18px;">Filter</button>
+        <!-- Tombol Hapus Riwayat diposisikan tepat di tempat tombol filter sebelumnya -->
+        <button type="button" id="btnToggleDeleteMode" class="btn btn-danger" style="padding: 9px 18px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; background: #DC2626; color: #FFFFFF; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+            <span id="btnDeleteIcon">🗑️</span>
+            <span id="btnDeleteText">Hapus Riwayat</span>
+        </button>
+
         <?php if ($search !== '' || $kelasFilter !== '' || $semesterFilter !== null || ($isAdmin && $kategoriFilter !== '')): ?>
-            <a href="<?= e(base_url('/staff/riwayat/index.php')) ?>" class="btn btn-ghost" style="padding: 9px 14px;">Reset</a>
+            <a href="<?= e(base_url('/staff/riwayat/index.php')) ?>" class="btn btn-ghost" style="padding: 9px 14px;">Reset Filter</a>
         <?php endif; ?>
     </form>
 
@@ -318,15 +433,15 @@ require_once __DIR__ . '/../../includes/header.php';
         <table class="responsive-stack" id="riwayatTable">
             <thead>
                 <tr>
-                    <th style="width: 140px;">Waktu Update</th>
-                    <th style="width: 120px;">Kategori</th>
+                    <th style="width: 130px;">Waktu Update</th>
+                    <th style="width: 110px;">Kategori</th>
                     <th>Mata Pelajaran / Target Hafalan</th>
                     <th>Nama Siswa &amp; Kelas</th>
-                    <th style="width: 85px; text-align: center;">Nilai</th>
-                    <th style="width: 80px; text-align: center;">Predikat</th>
-                    <th style="width: 100px;">Semester</th>
-                    <th style="min-width: 200px;">Catatan Guru</th>
-                    <th style="width: 120px; text-align: center;">Aksi</th>
+                    <th style="width: 80px; text-align: center;">Nilai</th>
+                    <th style="width: 75px; text-align: center;">Predikat</th>
+                    <th style="width: 95px;">Semester</th>
+                    <th style="min-width: 180px;">Catatan Guru</th>
+                    <th style="width: 150px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -352,7 +467,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     ?>
                         <tr data-student-search="<?= e(strtolower($row['student_name'] . ' ' . $row['nisn'])) ?>">
                             <td data-label="Waktu Update">
-                                <span style="font-size: 12.5px; font-weight: 600; color: var(--ink-base);"><?= e($waktuFormatted) ?></span>
+                                <span style="font-size: 12px; font-weight: 600; color: var(--ink-base);"><?= e($waktuFormatted) ?></span>
                             </td>
                             <td data-label="Kategori">
                                 <?php if ($isTahfidh): ?>
@@ -389,6 +504,15 @@ require_once __DIR__ . '/../../includes/header.php';
                                         <a href="<?= e(base_url('/staff/nilai/input.php?student_id=' . (int)$row['student_id'] . '&semester=' . (int)$row['semester'] . '&school_year=' . urlencode($row['school_year']))) ?>" class="btn btn-ghost btn-sm" title="Edit Nilai Mapel">Edit</a>
                                     <?php endif; ?>
                                     <a href="<?= e(base_url('/staff/rapor/cetak.php?student_id=' . (int)$row['student_id'] . '&semester=' . (int)$row['semester'] . '&school_year=' . urlencode($row['school_year']))) ?>" target="_blank" class="btn btn-gold btn-sm" title="Cetak Rapor PDF">PDF</a>
+                                    
+                                    <!-- Tombol Sampah Hapus Riwayat (Muncul saat klik Hapus Riwayat) -->
+                                    <button type="button" 
+                                            class="btn btn-delete btn-sm btn-delete-row" 
+                                            onclick="openDeleteModal('<?= (int)$row['id'] ?>', '<?= e($row['tipe']) ?>', '<?= e(addslashes($row['item_name'])) ?>', '<?= e(addslashes($row['student_name'])) ?>')" 
+                                            title="Hapus Nilai Ini" 
+                                            style="padding: 6px 9px; font-size: 12px; display: none; background: #DC2626; color: #FFFFFF; border: none; border-radius: 6px; cursor: pointer;">
+                                        🗑
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -399,8 +523,95 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
+<!-- Modal Pop-up Konfirmasi Hapus Data -->
+<div id="modalConfirmDelete" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+    <div style="background: #FFFFFF; border-radius: 16px; max-width: 440px; width: 90%; padding: 26px 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); text-align: center; border: 1px solid var(--line); animation: fadeIn 0.2s ease-out;">
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: #FEE2E2; color: #DC2626; display: flex; align-items: center; justify-content: center; font-size: 26px; margin: 0 auto 16px;">
+            🗑️
+        </div>
+        <h3 style="margin: 0 0 8px; font-size: 18px; font-weight: 800; color: #143523;">Konfirmasi Hapus Riwayat Nilai</h3>
+        <p style="margin: 0 0 22px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.5;" id="deleteConfirmMessage">
+            Apakah Anda yakin ingin menghapus riwayat nilai ini? Data yang dihapus tidak dapat dikembalikan.
+        </p>
+        <form method="POST" action="" id="formDeleteHistory">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="delete_history">
+            <input type="hidden" name="id" id="deleteTargetId" value="">
+            <input type="hidden" name="tipe" id="deleteTargetType" value="">
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()" style="flex: 1; padding: 10px 16px; font-weight: 600;">Batal</button>
+                <button type="submit" class="btn btn-delete" style="flex: 1; padding: 10px 16px; background: #DC2626; color: #FFFFFF; border: none; font-weight: 700; border-radius: 8px; cursor: pointer;">Ya, Hapus Data</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+let isDeleteModeActive = false;
+
+function toggleDeleteMode() {
+    isDeleteModeActive = !isDeleteModeActive;
+    const btnToggle = document.getElementById('btnToggleDeleteMode');
+    const btnIcon = document.getElementById('btnDeleteIcon');
+    const btnText = document.getElementById('btnDeleteText');
+    const deleteButtons = document.querySelectorAll('.btn-delete-row');
+
+    if (isDeleteModeActive) {
+        btnToggle.style.background = '#FEE2E2';
+        btnToggle.style.color = '#991B1B';
+        btnToggle.style.border = '1.5px solid #FCA5A5';
+        if (btnIcon) btnIcon.textContent = '✕';
+        if (btnText) btnText.textContent = 'Selesai Hapus';
+
+        deleteButtons.forEach(btn => {
+            btn.style.display = 'inline-flex';
+        });
+    } else {
+        btnToggle.style.background = '#DC2626';
+        btnToggle.style.color = '#FFFFFF';
+        btnToggle.style.border = 'none';
+        if (btnIcon) btnIcon.textContent = '🗑️';
+        if (btnText) btnText.textContent = 'Hapus Riwayat';
+
+        deleteButtons.forEach(btn => {
+            btn.style.display = 'none';
+        });
+    }
+}
+
+function openDeleteModal(id, tipe, itemName, studentName) {
+    const modal = document.getElementById('modalConfirmDelete');
+    const msg = document.getElementById('deleteConfirmMessage');
+    const inputId = document.getElementById('deleteTargetId');
+    const inputType = document.getElementById('deleteTargetType');
+
+    if (modal && inputId && inputType && msg) {
+        inputId.value = id;
+        inputType.value = tipe;
+        msg.innerHTML = `Apakah Anda yakin ingin menghapus riwayat nilai <strong>${escapeHtml(itemName)}</strong> untuk siswa <strong>${escapeHtml(studentName)}</strong>?<br><span style="font-size:12.5px; color:#DC2626; display:inline-block; margin-top:6px;">Tindakan ini akan menghapus nilai tersebut secara permanen.</span>`;
+        modal.style.display = 'flex';
+    }
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('modalConfirmDelete');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Live Automatic Search on Input
     const searchInput = document.getElementById('liveSearchRiwayat');
     const tableRows = Array.from(document.querySelectorAll('#riwayatTable tbody tr[data-student-search]'));
 
@@ -413,6 +624,28 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // 2. Button Toggle Delete Mode
+    const btnToggle = document.getElementById('btnToggleDeleteMode');
+    if (btnToggle) {
+        btnToggle.addEventListener('click', toggleDeleteMode);
+    }
+
+    // 3. Close modal on backdrop click or ESC key
+    const modal = document.getElementById('modalConfirmDelete');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeDeleteModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeDeleteModal();
+        }
+    });
 });
 </script>
 

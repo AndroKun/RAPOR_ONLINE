@@ -6,6 +6,11 @@ require_once __DIR__ . '/fpdf/fpdf.php';
 
 class RaporTemplatePDF extends FPDF
 {
+    public function SetFont($family, $style = '', $size = 0)
+    {
+        parent::SetFont($family === 'Helvetica' ? 'Times' : $family, $style, $size);
+    }
+
     public function Image($file, $x = null, $y = null, $w = 0, $h = 0, $type = '', $link = ''): void
     {
         $decodedImage = $this->decodePng($file);
@@ -189,18 +194,22 @@ function rapor_header(RaporTemplatePDF $pdf, string $title, bool $formal = false
     $pdf->SetLineWidth(0.45);
     $pdf->Image(__DIR__ . '/../resources/Logo_MTS.png', 18, 10, 30);
     $pdf->SetFont('Helvetica', 'B', 13);
-    $pdf->SetXY(25, 12);
-    $pdf->Cell(160, 7, "YAYASAN ROUDLOTUL QUR'AN AZ ZUHRI", 0, 1, 'C');
-    $pdf->SetFont('Helvetica', 'B', 15);
-    $pdf->Cell(190, 7, '" MTS ROUDLOTUL QUR\'AN "', 0, 1, 'C');
+    $pdf->SetXY(14, 12);
+    $pdf->Cell(187, 7, "YAYASAN ROUDLOTUL QUR'AN AZ ZUHRI", 0, 1, 'C');
+    $pdf->SetFont('Helvetica', 'B', 17);
+    $pdf->SetXY(14, 19);
+    $pdf->Cell(187, 7, '" MTS ROUDLOTUL QUR\'AN "', 0, 1, 'C');
     $pdf->SetFont('Helvetica', '', 9);
-    $pdf->Cell(190, 5, 'Desa Ngampelsari Rt. 03 Ngampelsari, Candi, Sidoarjo', 0, 1, 'C');
-    $pdf->Cell(190, 5, 'Email: mtsroudlotulquran@gmail.com  Telepon: 0821-4596-4013', 0, 1, 'C');
+    $pdf->SetXY(14, 26);
+    $pdf->Cell(210, 5, 'Desa Ngampelsari Rt. 03 Ngampelsari, Candi, Sidoarjo', 0, 1, 'C');
+    $pdf->SetXY(14, 31);
+    $pdf->Cell(210, 5, 'Email: mtsroudlotulquran@gmail.com  Telepon: 0821-4596-4013', 0, 1, 'C');
+    $pdf->SetXY(14, 36);
     $pdf->Cell(190, 5, 'SK KEMENKUMHAM Nomor AHU-0027813.AH.01.04. Tahun 2022', 0, 1, 'C');
-    $pdf->Line(14, 44, 196, 44);
+    $pdf->Line(14, 42, 200, 42);
     $pdf->SetFont('Helvetica', 'B', $formal ? 15 : 13);
-    $pdf->SetXY(14, 44);
-    $pdf->Cell(182, 8, $title, 0, 1, 'C');
+    $pdf->SetXY(14, 46);
+    $pdf->Cell(187, 8, $title, 0, 1, 'C');
 }
 
 function rapor_student_info(RaporTemplatePDF $pdf, array $student, array $report, float $y = 58, bool $includeNisn = true): void
@@ -310,6 +319,6 @@ function generate_rapor_pdf(array $student, array $academicGrades, array $tahfid
     $pdf->AddPage(); rapor_arab_page($pdf, $student, $report, $arabicGrades);
     $pdf->AddPage(); rapor_tahfidh_page($pdf, $student, $report, $tahfidhGrades);
     $pdf->AddPage(); rapor_pengembangan_page($pdf, $student, $report);
-    if ($dest === 'I' || $dest === 'D') { if (!headers_sent()) { header('Content-Type: application/pdf'); header('Content-Disposition: ' . ($dest === 'D' ? 'attachment' : 'inline') . '; filename="' . $filename . '"'); header('Cache-Control: private, max-age=0, must-revalidate'); header('Pragma: public'); } }
+    if ($dest === 'I' || $dest === 'D') { if (!headers_sent()) { header('Content-Type: application/pdf'); header('Content-Disposition: ' . ($dest === 'D' ? 'attachment' : 'inline') . '; filename="' . $filename . '"'); header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0'); header('Pragma: no-cache'); header('Expires: 0'); } }
     return $pdf->Output($dest, $filename);
 }

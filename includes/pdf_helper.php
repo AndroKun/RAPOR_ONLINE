@@ -6,6 +6,140 @@ require_once __DIR__ . '/fpdf/fpdf.php';
 
 class RaporTemplatePDF extends FPDF
 {
+    public function Image($file, $x = null, $y = null, $w = 0, $h = 0, $type = '', $link = ''): void
+    {
+        $decodedImage = $this->decodePng($file);
+        if ($decodedImage === null) {
+            return;
+        }
+
+        [$imageWidth, $imageHeight, $rawData] = $decodedImage;
+
+        $displayWidth = $w > 0 ? $w : $imageWidth / $this->k;
+        $displayHeight = $h > 0 ? $h : $displayWidth * $imageHeight / $imageWidth;
+        $imageName = 'I' . (count($this->images) + 1);
+        $this->images[$imageName] = [
+            'w' => $imageWidth,
+            'h' => $imageHeight,
+            'data' => gzcompress($rawData),
+            'object' => 0,
+        ];
+
+        $x = $x ?? $this->x;
+        $y = $y ?? $this->y;
+        $this->_out(sprintf('q %.2F 0 0 %.2F %.2F %.2F cm /%s Do Q',
+            $displayWidth * $this->k,
+            $displayHeight * $this->k,
+            $x * $this->k,
+            ($this->h - ($y + $displayHeight)) * $this->k,
+            $imageName
+        ));
+    }
+
+    protected function decodePng(string $file): ?array
+    {
+        $png = @file_get_contents($file);
+        if ($png === false || substr($png, 0, 8) !== "\x89PNG\r\n\x1a\n") {
+            return null;
+        }
+
+        $offset = 8;
+        $idat = '';
+        $palette = [];
+        $transparency = [];
+        $width = $height = $bitDepth = $colorType = $interlace = 0;
+        while ($offset + 8 <= strlen($png)) {
+            $length = unpack('N', substr($png, $offset, 4))[1];
+            $type = substr($png, $offset + 4, 4);
+            $data = substr($png, $offset + 8, $length);
+            $offset += 12 + $length;
+            if ($type === 'IHDR') {
+                $header = unpack('Nwidth/Nheight/CbitDepth/CcolorType/Ccompression/Cfilter/Cinterlace', $data);
+                $width = $header['width']; $height = $header['height'];
+                $bitDepth = $header['bitDepth']; $colorType = $header['colorType']; $interlace = $header['interlace'];
+            } elseif ($type === 'PLTE') {
+                for ($i = 0; $i + 2 < strlen($data); $i += 3) $palette[] = [ord($data[$i]), ord($data[$i + 1]), ord($data[$i + 2])];
+            } elseif ($type === 'tRNS') {
+                for ($i = 0; $i < strlen($data); $i++) $transparency[$i] = ord($data[$i]);
+            } elseif ($type === 'IDAT') {
+                $idat .= $data;
+            } elseif ($type === 'IEND') {
+                break;
+            }
+        }
+        if ($width < 1 || $height < 1 || $colorType !== 3 || $bitDepth !== 8 || $interlace !== 0 || $palette === []) return null;
+        $decoded = @zlib_decode($idat);
+        if ($decoded === false) return null;
+
+        $stride = $width;
+        $previous = array_fill(0, $stride, 0);
+        $rawData = '';
+        $position = 0;
+        for ($row = 0; $row < $height; $row++) {
+            $filter = ord($decoded[$position++]);
+            $current = array_values(unpack('C*', substr($decoded, $position, $stride)));
+            $position += $stride;
+            for ($i = 0; $i < $stride; $i++) {
+                $left = $i > 0 ? $current[$i - 1] : 0;
+                $up = $previous[$i];
+                $upLeft = $i > 0 ? $previous[$i - 1] : 0;
+                if ($filter === 1) $current[$i] = ($current[$i] + $left) & 255;
+                elseif ($filter === 2) $current[$i] = ($current[$i] + $up) & 255;
+                elseif ($filter === 3) $current[$i] = ($current[$i] + intdiv($left + $up, 2)) & 255;
+                elseif ($filter === 4) {
+                    $predictor = $left + $up - $upLeft;
+                    $distances = [abs($predictor - $left), abs($predictor - $up), abs($predictor - $upLeft)];
+                    $predictor = [$left, $up, $upLeft][array_search(min($distances), $distances, true)];
+                    $current[$i] = ($current[$i] + $predictor) & 255;
+                } elseif ($filter !== 0) return null;
+                $color = $palette[$current[$i]] ?? [255, 255, 255];
+                $alpha = $transparency[$current[$i]] ?? 255;
+                $rawData .= chr(intdiv($color[0] * $alpha + 255 * (255 - $alpha), 255));
+                $rawData .= chr(intdiv($color[1] * $alpha + 255 * (255 - $alpha), 255));
+                $rawData .= chr(intdiv($color[2] * $alpha + 255 * (255 - $alpha), 255));
+            }
+            $previous = $current;
+        }
+        return [$width, $height, $rawData];
+    }
+
+    protected function _putresources()
+    {
+        $this->_putfonts();
+        foreach ($this->images as &$image) {
+            $image['object'] = $this->_newobj();
+            $this->_out('<</Type /XObject /Subtype /Image');
+            $this->_out('/Width ' . $image['w']);
+            $this->_out('/Height ' . $image['h']);
+            $this->_out('/ColorSpace /DeviceRGB /BitsPerComponent 8');
+            $this->_out('/Filter /FlateDecode /Length ' . strlen($image['data']) . '>>');
+            $this->_out('stream');
+            $this->_out($image['data']);
+            $this->_out('endstream');
+            $this->_out('endobj');
+        }
+        unset($image);
+
+        $this->offsets[2] = strlen($this->buffer);
+        $this->_out('2 0 obj');
+        $this->_out('<<');
+        $this->_putresourcedict();
+        $this->_out('>>');
+        $this->_out('endobj');
+    }
+
+    protected function _putresourcedict()
+    {
+        parent::_putresourcedict();
+        if ($this->images !== []) {
+            $this->_out('/XObject <<');
+            foreach ($this->images as $name => $image) {
+                $this->_out('/' . $name . ' ' . $image['object'] . ' 0 R');
+            }
+            $this->_out('>>');
+        }
+    }
+
     public function Header(): void
     {
     }
@@ -53,6 +187,7 @@ function rapor_header(RaporTemplatePDF $pdf, string $title, bool $formal = false
 {
     $pdf->SetDrawColor(0, 0, 0);
     $pdf->SetLineWidth(0.45);
+    $pdf->Image(__DIR__ . '/../resources/Logo_MTS.png', 18, 10, 30);
     $pdf->SetFont('Helvetica', 'B', 13);
     $pdf->SetXY(25, 12);
     $pdf->Cell(160, 7, "YAYASAN ROUDLOTUL QUR'AN AZ ZUHRI", 0, 1, 'C');
@@ -62,7 +197,7 @@ function rapor_header(RaporTemplatePDF $pdf, string $title, bool $formal = false
     $pdf->Cell(190, 5, 'Desa Ngampelsari Rt. 03 Ngampelsari, Candi, Sidoarjo', 0, 1, 'C');
     $pdf->Cell(190, 5, 'Email: mtsroudlotulquran@gmail.com  Telepon: 0821-4596-4013', 0, 1, 'C');
     $pdf->Cell(190, 5, 'SK KEMENKUMHAM Nomor AHU-0027813.AH.01.04. Tahun 2022', 0, 1, 'C');
-    $pdf->Line(14, 39, 196, 39);
+    $pdf->Line(14, 44, 196, 44);
     $pdf->SetFont('Helvetica', 'B', $formal ? 15 : 13);
     $pdf->SetXY(14, 44);
     $pdf->Cell(182, 8, $title, 0, 1, 'C');
@@ -167,7 +302,7 @@ function rapor_pengembangan_page(RaporTemplatePDF $pdf, array $student, array $r
 function generate_rapor_pdf(array $student, array $academicGrades, array $tahfidhGrades, array $report, string $dest = 'I', string $filename = 'rapor.pdf'): string
 {
     if (ob_get_level()) ob_end_clean();
-    $pdf = new RaporTemplatePDF('P', 'mm', 'A4'); $pdf->SetMargins(14, 10, 14); $pdf->SetAutoPageBreak(false);
+    $pdf = new RaporTemplatePDF('P', 'mm', [215, 330]); $pdf->SetMargins(14, 10, 14); $pdf->SetAutoPageBreak(false);
     $pdf->AddPage(); rapor_biodata($pdf, $student);
     $pdf->AddPage(); rapor_academic_page($pdf, $student, $report, $academicGrades, 'LAPORAN HASIL BELAJAR SEMESTER');
     $pdf->AddPage(); rapor_academic_page($pdf, $student, $report, $academicGrades, 'HASIL SUMATIF TENGAH SEMESTER');

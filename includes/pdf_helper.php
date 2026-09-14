@@ -208,7 +208,7 @@ function rapor_header(RaporTemplatePDF $pdf, string $title, bool $formal = false
     $pdf->Cell(190, 5, 'SK KEMENKUMHAM Nomor AHU-0027813.AH.01.04. Tahun 2022', 0, 1, 'C');
     $pdf->Line(14, 42, 200, 42);
     $pdf->SetFont('Helvetica', 'B', $formal ? 15 : 13);
-    $pdf->SetXY(14, 46);
+    $pdf->SetXY(14, 44);
     $pdf->Cell(187, 8, $title, 0, 1, 'C');
 }
 
@@ -261,7 +261,7 @@ function rapor_biodata(RaporTemplatePDF $pdf, array $student): void
         $pdf->SetXY(20, $y); $pdf->Cell(62, 6, $field[0], 0, 0); $pdf->Cell(4, 6, ':', 0, 0); $pdf->Cell(108, 6, $field[1], 0, 1); $y += 6.6;
     }
     $pdf->SetFont('Helvetica', '', 8); $pdf->SetXY(125, 258); $pdf->Cell(65, 5, 'Sidoarjo, ' . date('d-m-Y'), 0, 1, 'C');
-    $pdf->SetXY(125, 265); $pdf->Cell(65, 5, 'KEPALA MADRASAH', 0, 1, 'C'); $pdf->SetXY(125, 282); $pdf->Cell(65, 5, '(nama kepala sekolah)', 0, 1, 'C');
+    $pdf->SetXY(119, 265); $pdf->Cell(65, 5, 'KEPALA MADRASAH', 0, 1, 'C'); $pdf->SetXY(125, 290); $pdf->Cell(65, 5, '(nama kepala sekolah)', 0, 1, 'C');
 }
 
 function rapor_academic_page(RaporTemplatePDF $pdf, array $student, array $report, array $grades, string $title): void
@@ -275,7 +275,20 @@ function rapor_academic_page(RaporTemplatePDF $pdf, array $student, array $repor
     }
     for ($i = $count; $i < 18; $i++) { rapor_table_cell($pdf, 10, 7, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 7); rapor_table_cell($pdf, 20, 7); rapor_table_cell($pdf, 25, 7); rapor_table_cell($pdf, 65, 7); $pdf->Ln(); }
     $average = $count > 0 ? $sum / $count : 0; rapor_table_cell($pdf, 72, 8, 'Nilai rata-rata'); rapor_table_cell($pdf, 20, 8, number_format($average, 1), 'C'); rapor_table_cell($pdf, 25, 8, rapor_grade($average), 'C'); rapor_table_cell($pdf, 65, 8); $pdf->Ln();
-    $pdf->SetFont('Helvetica', '', 8); $pdf->SetXY(16, 244); $pdf->Cell(80, 6, 'Catatan Wali Kelas :', 0, 0); $pdf->Cell(80, 6, 'Catatan Wali Murid :', 0, 1); $pdf->Rect(16, 250, 82, 20); $pdf->Rect(100, 250, 82, 20);
+    $pdf->SetFont('Helvetica', '', 8); $pdf->SetXY(16, 224);
+    if ($title === 'LAPORAN HASIL BELAJAR SEMESTER') {
+        $pdf->Cell(72, 7, 'Jumlah Prestasi Hasil Dasar', 1, 0, 'C');
+        $pdf->Cell(45, 7, (string)$count, 1, 0, 'C');
+        $pdf->Cell(65, 7, '', 1, 1);
+        $pdf->SetX(16);
+        $pdf->Cell(72, 7, 'Nilai rata-rata', 1, 0, 'C');
+        $pdf->Cell(45, 7, number_format($average, 1), 1, 0, 'C');
+        $pdf->Cell(65, 7, '', 1, 1);
+    } else {
+        $pdf->Cell(82, 6, 'Catatan Wali Kelas :', 0, 0);
+        $pdf->Cell(82, 6, 'Catatan Wali Murid :', 0, 1);
+        $pdf->Rect(16, 250, 82, 20); $pdf->Rect(100, 250, 82, 20);
+    }
 }
 
 function rapor_tahfidh_page(RaporTemplatePDF $pdf, array $student, array $report, array $grades): void

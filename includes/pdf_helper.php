@@ -252,13 +252,17 @@ function rapor_biodata(RaporTemplatePDF $pdf, array $student): void
         ['12. Nama Orang Tua', ''], ['   a. Ayah', rapor_text($student['nama_ayah'])], ['   b. Ibu', rapor_text($student['nama_ibu'])],
         ['13. Alamat Orang Tua', rapor_text($student['alamat_orang_tua'])], ['14. Pekerjaan Orang Tua', ''],
         ['   a. Ayah', rapor_text($student['pekerjaan_ayah'])], ['   b. Ibu', rapor_text($student['pekerjaan_ibu'])],
-        ['15. Nama Wali', rapor_text($student['nama_wali'])], ['16. Alamat Wali', rapor_text($student['alamat_wali'])],
+        ['15. Nama Wali', rapor_text($student['nama_wali']), true], ['16. Alamat Wali', rapor_text($student['alamat_wali'])],
         ['17. Pekerjaan', rapor_text($student['pekerjaan_wali'])],
     ];
     $y = 58;
     foreach ($fields as $field) {
         $pdf->SetFont('Helvetica', 'B', 9);
-        $pdf->SetXY(20, $y); $pdf->Cell(62, 6, $field[0], 0, 0); $pdf->Cell(4, 6, ':', 0, 0);
+        $pdf->SetXY(20, $y); $pdf->Cell(62, 6, $field[0], 0, 0);
+        $showColon = $field[2] ?? ($field[1] !== '');
+        if ($showColon) {
+            $pdf->Cell(4, 6, ':', 0, 0);
+        }
         $pdf->SetFont('Helvetica', '', 9);
         $pdf->Cell(108, 6, $field[1], 0, 1); $y += 6.6;
     }

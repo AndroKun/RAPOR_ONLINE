@@ -15,6 +15,7 @@ $isGuruMapel = ($userRole === 'staff');
 ?>
 <aside class="sidebar" id="sidebar">
     <div class="brand">
+        <img class="brand-logo" src="<?= e(base_url('/resources/Logo_MTS.png')) ?>" alt="Logo MTs Roudlotul Qur'an">
         <div>
             <div class="brand-name">Yayasan Roudlotul Qur'an Az Zuhri</div>
             <div class="brand-sub">Pon.Pes &amp; MTs Tahfidh Roudlotul Qur'an</div>

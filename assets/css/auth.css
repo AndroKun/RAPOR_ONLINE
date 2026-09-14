@@ -53,14 +53,73 @@ body {
     margin: 0;
     font-size: 19px;
     font-weight: 800;
-    letter-spacing: -0.01em;
 }
 
-.login-header p {
-    margin: 6px 0 0 0;
+.login-title {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: left;
+}
+
+.login-title img {
+    display: block;
+    width: 96px !important;
+    height: 96px !important;
+    max-width: 96px !important;
+    max-height: 96px !important;
+    object-fit: contain;
+    opacity: 0.9;
+    flex: 0 0 auto;
+}
+
+.login-heading-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.login-heading-name,
+.login-heading-subtitle {
+    display: block;
+}
+
+.login-heading-name {
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.login-heading-subtitle {
     font-size: 12.5px;
     color: #D1FAE5;
     font-weight: 500;
+}
+
+@media (max-width: 430px) {
+    .login-header {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+    .login-title {
+        gap: 9px;
+    }
+
+    .login-title img {
+        width: 78px !important;
+        height: 78px !important;
+        max-width: 78px !important;
+        max-height: 78px !important;
+    }
+
+    .login-heading-name {
+        font-size: 17px;
+    }
+
+    .login-heading-subtitle {
+        font-size: 11px;
+    }
 }
 
 .login-body {

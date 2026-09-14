@@ -50,14 +50,19 @@ $flash = get_flash();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Staf & Guru - MTs Roudlotul Qur'an</title>
-    <link rel="stylesheet" href="<?= e(base_url('/assets/css/auth.css')) ?>">
+    <link rel="stylesheet" href="<?= e(base_url('/assets/css/auth.css?v=3')) ?>">
 </head>
 <body>
 
 <div class="login-card">
     <div class="login-header">
-        <h1>MTs Roudlotul Qur'an</h1>
-        <p>Portal Masuk Staf, Guru & Administrator</p>
+        <h1 class="login-title">
+            <img src="<?= e(base_url('/resources/Logo_MTS.png')) ?>" alt="Logo MTs Roudlotul Qur'an">
+            <span class="login-heading-text">
+                <span class="login-heading-name">MTs Roudlotul Qur'an</span>
+                <span class="login-heading-subtitle">Portal Masuk Staf, Guru & Administrator</span>
+            </span>
+        </h1>
     </div>
 
     <div class="login-body">

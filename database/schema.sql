@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `tahfidh_grades` (
     `student_id` INT UNSIGNED NOT NULL,
     `memorization` VARCHAR(150) NOT NULL COMMENT 'Surat / Juz / Target',
     `score` DECIMAL(5,2) NOT NULL,
-    `predikat` ENUM('A', 'B', 'C', 'D', 'E') NULL,
+    `predikat` ENUM('A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E') NULL,
     `description` TEXT NULL,
     `semester` TINYINT UNSIGNED NOT NULL,
     `school_year` VARCHAR(9) NOT NULL,

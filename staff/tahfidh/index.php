@@ -79,6 +79,18 @@ foreach ($students as $st) {
     }
 }
 $progressPercent = $totalSiswa > 0 ? (int)round(($sudahDiisi / $totalSiswa) * 100) : 0;
+$averagePredicate = static function (?float $score): string {
+    if ($score === null || $score <= 0) return '–';
+    if ($score >= 98) return 'A+';
+    if ($score >= 91) return 'A';
+    if ($score >= 86) return 'B+';
+    if ($score >= 81) return 'B';
+    if ($score >= 76) return 'C+';
+    if ($score >= 71) return 'C';
+    if ($score >= 66) return 'D+';
+    if ($score >= 61) return 'D';
+    return 'E';
+};
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -161,7 +173,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     <th>Nama Lengkap Santri / Siswa</th>
                     <th style="width: 85px;">Kelas</th>
                     <th>Target Hafalan Terinput</th>
-                    <th style="width: 110px; text-align: center;">Rata-Rata</th>
+                    <th style="width: 110px; text-align: center;">Predikat</th>
                     <th style="width: 130px;">Status Nilai</th>
                     <th style="width: 160px; text-align: center;">Aksi</th>
                 </tr>
@@ -196,8 +208,8 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <span style="color: var(--ink-soft); font-size: 13px;">Belum Diisi</span>
                                 <?php endif; ?>
                             </td>
-                            <td data-label="Rata-Rata" style="text-align: center; font-weight: 800; color: var(--green-800); font-size: 14.5px;">
-                                <?= $rataRata !== null ? number_format($rataRata, 1) : '<span style="color:var(--ink-soft); font-weight:400;">–</span>' ?>
+                            <td data-label="Predikat" style="text-align: center; font-weight: 800; color: var(--green-800); font-size: 14.5px;">
+                                <?= e($averagePredicate($rataRata)) ?>
                             </td>
                             <td data-label="Status">
                                 <?php if ($totalHafalan >= 2): ?>

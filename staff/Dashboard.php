@@ -194,6 +194,60 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 </div>
 
+<?php if ($userRole === 'admin' || $userRole === 'wali_kelas'): ?>
+<section class="quick-access" aria-labelledby="quickAccessTitle">
+    <div class="quick-access-head">
+        <div>
+            <h2 id="quickAccessTitle">Akses Cepat</h2>
+            <p>Menu penting untuk mempercepat pekerjaan <?= $userRole === 'admin' ? 'admin' : 'wali kelas' ?>.</p>
+        </div>
+        <span class="quick-access-badge">Faster Access</span>
+    </div>
+
+    <div class="quick-access-grid">
+        <?php if ($userRole === 'admin'): ?>
+            <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">+</span>
+                <span><strong>Tambah Siswa</strong><small>Daftarkan data siswa baru</small></span>
+            </a>
+            <a href="<?= e(base_url('/staff/nilai/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">N</span>
+                <span><strong>Input Nilai Akademik</strong><small>Kelola nilai mata pelajaran</small></span>
+            </a>
+            <a href="<?= e(base_url('/staff/tahfidh/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">T</span>
+                <span><strong>Input Nilai Tahfidh</strong><small>Kelola capaian hafalan</small></span>
+            </a>
+            <a href="<?= e(base_url('/staff/rapor/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">P</span>
+                <span><strong>Cetak & Publikasi</strong><small>Siapkan dokumen rapor</small></span>
+            </a>
+            <a href="<?= e(base_url('/staff/users/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">U</span>
+                <span><strong>Kelola Pengguna</strong><small>Atur akun admin dan guru</small></span>
+            </a>
+        <?php else: ?>
+            <a href="<?= e(base_url('/staff/nilai/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">N</span>
+                <span><strong>Input Nilai Akademik</strong><small>Isi nilai siswa kelas <?= e($waliKelas ?: 'Anda') ?></small></span>
+            </a>
+            <a href="<?= e(base_url('/staff/tahfidh/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">T</span>
+                <span><strong>Input Nilai Tahfidh</strong><small>Perbarui capaian hafalan</small></span>
+            </a>
+            <a href="<?= e(base_url('/staff/rapor/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">P</span>
+                <span><strong>Cetak Rapor</strong><small>Periksa dan cetak rapor siswa</small></span>
+            </a>
+            <a href="<?= e(base_url('/staff/riwayat/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">R</span>
+                <span><strong>Riwayat Pengisian</strong><small>Lihat aktivitas pengisian nilai</small></span>
+            </a>
+        <?php endif; ?>
+    </div>
+</section>
+<?php endif; ?>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const rows = Array.from(document.querySelectorAll('#siswaTable tbody tr[data-name]'));

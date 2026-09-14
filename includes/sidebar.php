@@ -54,8 +54,8 @@ $isGuruMapel = ($userRole === 'staff');
         <li>
             <a href="<?= e(base_url('/staff/tahfidh/index.php')) ?>" class="<?= $activeMenu === 'tahfidh' ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3a3 3 0 013 3v6a3 3 0 01-6 0V6a3 3 0 013-3z" stroke="currentColor" stroke-width="1.6"/>
-                    <path d="M6 11a6 6 0 0012 0M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    <path d="M14.5 5.5l4 4M5 19l3.5-.8L19.3 7.4a1.8 1.8 0 00-2.5-2.5L6 15.7 5 19z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                    <path d="M12 20H4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
                 </svg>
                 <span>Input Nilai Tahfidh</span>
             </a>

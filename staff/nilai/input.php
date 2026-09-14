@@ -41,8 +41,6 @@ $activeMenu = 'nilai';
 $availableSubjects = get_all_subjects($pdo);
 
 $initialRows = [];
-$predicateOptions = ['A', 'B', 'C', 'D', 'E'];
-
 $defaultPredicate = static function (string $score): string {
     if ($score === '') return '';
     $value = (float)$score;
@@ -119,7 +117,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     $scores = $_POST['scores'] ?? [];
-    $predikats = $_POST['predikats'] ?? [];
     $descriptions = $_POST['descriptions'] ?? [];
 
     try {
@@ -141,12 +138,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             for ($i = 0; $i < count($subjects); $i++) {
                 $subj = trim((string)($subjects[$i] ?? ''));
                 $scoreVal = trim((string)($scores[$i] ?? ''));
-                $predikat = strtoupper(trim((string)($predikats[$i] ?? '')));
+                $predikat = $defaultPredicate($scoreVal);
                 $desc = trim((string)($descriptions[$i] ?? ''));
 
                 if ($subj !== '' && $scoreVal !== '') {
-                    if (!in_array($predikat, $predicateOptions, true)) {
-                        throw new Exception("Predikat mata pelajaran '{$subj}' harus dipilih dari A sampai E.");
+                    if (!is_numeric($scoreVal)) {
+                        throw new Exception("Nilai mata pelajaran '{$subj}' harus berupa angka.");
                     }
                     $scoreNum = (float)$scoreVal;
                     if ($scoreNum < 0 || $scoreNum > 100) {
@@ -168,12 +165,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Guru/Staff: Terkunci HANYA untuk mata pelajaran guru tersebut
             $subj = ($teacherMapel !== '') ? $teacherMapel : ($availableSubjects[0] ?? 'Bahasa Indonesia');
             $scoreVal = trim((string)($scores[0] ?? ''));
-            $predikat = strtoupper(trim((string)($predikats[0] ?? '')));
+            $predikat = $defaultPredicate($scoreVal);
             $desc = trim((string)($descriptions[0] ?? ''));
 
             if ($scoreVal !== '') {
-                if (!in_array($predikat, $predicateOptions, true)) {
-                    throw new Exception("Predikat mata pelajaran '{$subj}' harus dipilih dari A sampai E.");
+                if (!is_numeric($scoreVal)) {
+                    throw new Exception("Nilai mata pelajaran '{$subj}' harus berupa angka.");
                 }
                 $scoreNum = (float)$scoreVal;
                 if ($scoreNum < 0 || $scoreNum > 100) {
@@ -283,7 +280,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <h2><?= $isAdmin ? 'Formulir Capaian Nilai Akademik Siswa' : 'Formulir Nilai Mata Pelajaran: ' . e($initialRows[0]['subject']) ?></h2>
             <p class="section-hint" style="margin: 2px 0 0;">
                 <?= $isAdmin 
-                    ? 'Masukkan nilai (skala 0–100) dan pilih predikat A–E. Klik <strong>+ Tambah Baris Mapel</strong> jika ingin menambah mata pelajaran.'
+                    ? 'Masukkan nilai angka (skala 0–100). Predikat akan dihitung otomatis. Klik <strong>+ Tambah Baris Mapel</strong> jika ingin menambah mata pelajaran.'
                     : 'Ketik nilai ujian/tugas mata pelajaran <strong>' . e($initialRows[0]['subject']) . '</strong> (skala 0–100) dan catatan capaian santri.' ?>
             </p>
         </div>
@@ -305,7 +302,6 @@ require_once __DIR__ . '/../../includes/header.php';
                     <th style="width: 45px;" class="num">No</th>
                     <th style="min-width: 250px;">Mata Pelajaran</th>
                     <th style="width: 120px;" class="num">Nilai (0–100)</th>
-                    <th style="width: 105px; text-align: center;">Predikat (A-E)</th>
                     <th>Capaian Kompetensi / Catatan Guru</th>
                     <?php if ($isAdmin): ?>
                         <th style="width: 60px; text-align: center;">Aksi</th>
@@ -314,7 +310,7 @@ require_once __DIR__ . '/../../includes/header.php';
             </thead>
             <tbody id="akademikRowsBody">
                 <tr id="emptyRowPlaceholder" style="<?= !empty($initialRows) ? 'display: none;' : '' ?>">
-                    <td colspan="<?= $isAdmin ? '6' : '5' ?>" style="text-align: center; padding: 36px 20px; color: var(--ink-soft); background: #fafdfb; border: 1.5px dashed var(--line); border-radius: 8px;">
+                    <td colspan="<?= $isAdmin ? '5' : '4' ?>" style="text-align: center; padding: 36px 20px; color: var(--ink-soft); background: #fafdfb; border: 1.5px dashed var(--line); border-radius: 8px;">
                         <div style="font-size: 28px; margin-bottom: 8px;">📘</div>
                         <div style="font-weight: 700; color: var(--green-900); font-size: 14.5px;">Belum ada mata pelajaran yang diinput</div>
                         <?php if ($isAdmin): ?>
@@ -330,18 +326,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 foreach ($initialRows as $index => $row): 
                     $valSubj = (string)$row['subject'];
                     $valScore = (string)$row['score'];
-                    $valPredikat = (string)($row['predikat'] ?? '');
                     $valDesc = (string)$row['description'];
-
-                    $pred = '–';
-                    $predClass = '';
-                    if ($valScore !== '') {
-                        $sNum = (float)$valScore;
-                        if ($sNum >= 91) { $pred = 'A'; $predClass = 'p-a'; }
-                        elseif ($sNum >= 81) { $pred = 'B'; $predClass = 'p-b'; }
-                        elseif ($sNum >= 71) { $pred = 'C'; $predClass = 'p-c'; }
-                        else { $pred = 'D'; $predClass = 'p-d'; }
-                    }
                 ?>
                     <tr class="akademik-data-row">
                         <td class="num row-num" data-label="No"><?= $no++ ?></td>
@@ -372,14 +357,6 @@ require_once __DIR__ . '/../../includes/header.php';
                             <input type="number" step="0.1" min="0" max="100" name="scores[]" value="<?= e($valScore) ?>" placeholder="0 - 100"
                                    class="score-input" autofocus
                                    style="width: 100px; padding: 8px 10px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
-                        </td>
-                        <td data-label="Predikat" style="text-align: center;">
-                            <select name="predikats[]" class="predicate-select" style="width: 78px; padding: 8px 6px; text-align: center; font-weight: 700; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
-                                <option value="">-</option>
-                                <?php foreach ($predicateOptions as $option): ?>
-                                    <option value="<?= $option ?>" <?= $valPredikat === $option ? 'selected' : '' ?>><?= $option ?></option>
-                                <?php endforeach; ?>
-                            </select>
                         </td>
                         <td data-label="Catatan Guru">
                             <input type="text" name="descriptions[]" value="<?= e($valDesc) ?>" placeholder="Contoh: Sangat baik dalam memahami materi pembelajaran..." 
@@ -424,17 +401,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, '&#039;');
     }
 
-    function calculatePredikat(scoreVal) {
-        if (scoreVal === '' || isNaN(scoreVal)) {
-            return { label: '–', cls: '' };
-        }
-        const num = Number(scoreVal);
-        if (num >= 91) return { label: 'A', cls: 'p-a' };
-        if (num >= 81) return { label: 'B', cls: 'p-b' };
-        if (num >= 71) return { label: 'C', cls: 'p-c' };
-        return { label: 'D', cls: 'p-d' };
-    }
-
     function updateRowNumbers() {
         const rows = tbody.querySelectorAll('tr.akademik-data-row');
         if (rows.length === 0) {
@@ -449,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (isAdmin && btnAdd) {
-        function createRow(subject = '', score = '', predikat = '', description = '') {
+        function createRow(subject = '', score = '', description = '') {
             const tr = document.createElement('tr');
             tr.className = 'akademik-data-row';
 
@@ -464,8 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 optionsHtml += `<option value="${escapeHtml(subject)}" selected>${escapeHtml(subject)}</option>`;
             }
 
-            const pred = calculatePredikat(score);
-
             tr.innerHTML = `
                 <td class="num row-num" data-label="No">1</td>
                 <td data-label="Mata Pelajaran">
@@ -478,12 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" step="0.1" min="0" max="100" name="scores[]" value="${escapeHtml(score)}" placeholder="0 - 100"
                            class="score-input"
                            style="width: 100px; padding: 8px 10px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
-                </td>
-                <td data-label="Predikat" style="text-align: center;">
-                    <select name="predikats[]" class="predicate-select" style="width: 78px; padding: 8px 6px; text-align: center; font-weight: 700; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
-                        <option value="">-</option>
-                        ${['A', 'B', 'C', 'D', 'E'].map(option => `<option value="${option}" ${option === predikat ? 'selected' : ''}>${option}</option>`).join('')}
-                    </select>
                 </td>
                 <td data-label="Catatan Guru">
                     <input type="text" name="descriptions[]" value="${escapeHtml(description)}" placeholder="Contoh: Sangat baik dalam memahami materi pembelajaran..." 
@@ -516,20 +474,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-
-    tbody.addEventListener('input', (e) => {
-        if (e.target.classList.contains('score-input')) {
-            const row = e.target.closest('tr.akademik-data-row');
-            if (row) {
-                const badge = row.querySelector('.predikat-badge');
-                if (badge) {
-                    const pred = calculatePredikat(e.target.value.trim());
-                    badge.textContent = pred.label;
-                    badge.className = `predikat-badge ${pred.cls}`;
-                }
-            }
-        }
-    });
 
     updateRowNumbers();
 });

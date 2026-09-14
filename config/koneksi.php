@@ -61,6 +61,12 @@ try {
         // Ignored if already exists
     }
 
+    try {
+        $pdo->exec("ALTER TABLE `tahfidh_grades` MODIFY COLUMN `predikat` ENUM('A+','A','B+','B','C+','C','D+','D','E') NULL");
+    } catch (Throwable $e) {
+        // Ignored if the database user cannot modify the existing column
+    }
+
     // Ensure subjects table exists and is populated
     try {
         $pdo->exec("

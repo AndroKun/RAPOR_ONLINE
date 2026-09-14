@@ -50,7 +50,7 @@ $flash = get_flash();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Staf & Guru - MTs Roudlotul Qur'an</title>
-    <link rel="stylesheet" href="<?= e(base_url('/assets/css/auth.css?v=3')) ?>">
+    <link rel="stylesheet" href="<?= e(base_url('/assets/css/auth.css?v=5')) ?>">
 </head>
 <body>
 
@@ -109,6 +109,7 @@ $flash = get_flash();
     <div class="login-footer">
         <p>Untuk wali murid & umum: <a href="<?= e(base_url('/publik/index.php')) ?>">Buka Portal Rapor Publik ↗</a></p>
         <p><small>&copy; <?= date('Y') ?> MTs Tahfidh Roudlotul Qur'an Sidoarjo</small></p>
+        <p class="developer-credit"><small>Dikembangkan oleh tim IT @Rakha Hadi Yazid &amp; @Andro Lintang Mahaegan</small></p>
     </div>
 </div>
 

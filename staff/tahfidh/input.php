@@ -31,6 +31,32 @@ $contentTitle = 'Input Nilai Tahfidh Al-Qur\'an';
 $contentSubtitle = 'Penilaian setoran hafalan, fashahah, kelancaran, dan tajwid santri.';
 $activeMenu = 'tahfidh';
 
+$predicateScores = [
+    'A+' => 100,
+    'A' => 95,
+    'B+' => 90,
+    'B' => 85,
+    'C+' => 80,
+    'C' => 75,
+    'D+' => 70,
+    'D' => 65,
+    'E' => 50,
+];
+$predicateOptions = array_keys($predicateScores);
+$legacyPredicate = static function (string $predicate, string $score): string {
+    if ($predicate !== '') return $predicate;
+    $value = (float)$score;
+    if ($value >= 98) return 'A+';
+    if ($value >= 91) return 'A';
+    if ($value >= 86) return 'B+';
+    if ($value >= 81) return 'B';
+    if ($value >= 76) return 'C+';
+    if ($value >= 71) return 'C';
+    if ($value >= 66) return 'D+';
+    if ($value >= 61) return 'D';
+    return $value > 0 ? 'E' : '';
+};
+
 // Ambil nilai tahfidh yang sudah tersimpan
 $stmtTahfidh = $pdo->prepare("SELECT memorization, score, predikat, description FROM tahfidh_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY id ASC");
 $stmtTahfidh->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
@@ -42,7 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
     $memorizations = $_POST['memorizations'] ?? [];
-    $scores = $_POST['scores'] ?? [];
     $predikats = $_POST['predikats'] ?? [];
     $descriptions = $_POST['descriptions'] ?? [];
 
@@ -59,18 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $insertedCount = 0;
         for ($i = 0; $i < count($memorizations); $i++) {
             $mem = trim((string)($memorizations[$i] ?? ''));
-            $scoreVal = trim((string)($scores[$i] ?? ''));
             $predikat = strtoupper(trim((string)($predikats[$i] ?? '')));
             $desc = trim((string)($descriptions[$i] ?? ''));
 
-            if ($mem !== '' && $scoreVal !== '') {
-                if (!in_array($predikat, ['A', 'B', 'C', 'D', 'E'], true)) {
-                    throw new Exception("Predikat target hafalan '{$mem}' harus dipilih dari A sampai E.");
+            if ($mem !== '' && $predikat !== '') {
+                if (!array_key_exists($predikat, $predicateScores)) {
+                    throw new Exception("Predikat target hafalan '{$mem}' tidak valid.");
                 }
-                $scoreNum = (float)$scoreVal;
-                if ($scoreNum < 0 || $scoreNum > 100) {
-                    throw new Exception("Nilai hafalan '{$mem}' harus berada pada rentang 0 sampai 100.");
-                }
+                $scoreNum = $predicateScores[$predikat];
 
                 $stmtInsert->execute([
                     'sid' => $studentId,
@@ -149,7 +170,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="panel-head">
         <div>
             <h2>Formulir Capaian Tahfidh Al-Qur'an</h2>
-            <p class="section-hint" style="margin: 2px 0 0;">Klik tombol <strong>+ Tambah Baris Penilaian</strong> di sebelah kanan untuk menambahkan baris target hafalan siswa.</p>
+                <p class="section-hint" style="margin: 2px 0 0;">Pilih predikat capaian hafalan pada dropdown. Klik tombol <strong>+ Tambah Baris Penilaian</strong> untuk menambahkan target hafalan.</p>
         </div>
         <button type="button" class="btn btn-primary" id="btnAddTahfidhRow" style="display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(21,122,66,0.25);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -165,15 +186,14 @@ require_once __DIR__ . '/../../includes/header.php';
                 <tr>
                     <th style="width: 45px;" class="num">No</th>
                     <th style="min-width: 260px;">Target Hafalan / Surat / Juz</th>
-                    <th style="width: 130px;" class="num">Nilai (0–100)</th>
-                    <th style="width: 105px; text-align: center;">Predikat (A-E)</th>
+                        <th style="width: 130px; text-align: center;">Predikat</th>
                     <th>Catatan Fashahah, Kelancaran &amp; Tajwid</th>
                     <th style="width: 60px; text-align: center;">Aksi</th>
                 </tr>
             </thead>
             <tbody id="tahfidhRowsBody">
                 <tr id="emptyRowPlaceholder" style="<?= !empty($savedTahfidh) ? 'display: none;' : '' ?>">
-                    <td colspan="6" style="text-align: center; padding: 36px 20px; color: var(--ink-soft); background: #fafdfb; border: 1.5px dashed var(--line); border-radius: 8px;">
+                    <td colspan="5" style="text-align: center; padding: 36px 20px; color: var(--ink-soft); background: #fafdfb; border: 1.5px dashed var(--line); border-radius: 8px;">
                         <div style="font-size: 28px; margin-bottom: 8px;">📖</div>
                         <div style="font-weight: 700; color: var(--green-900); font-size: 14.5px;">Belum ada target penilaian hafalan</div>
                         <div style="font-size: 13px; margin-top: 4px; color: var(--ink-soft);">
@@ -187,7 +207,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 foreach ($savedTahfidh as $row): 
                     $valMem = (string)$row['memorization'];
                     $valScore = (string)$row['score'];
-                    $valPredikat = (string)($row['predikat'] ?? '');
+                    $valPredikat = $legacyPredicate((string)($row['predikat'] ?? ''), $valScore);
                     $valDesc = (string)($row['description'] ?? '');
                 ?>
                     <tr class="tahfidh-data-row">
@@ -196,14 +216,10 @@ require_once __DIR__ . '/../../includes/header.php';
                             <input type="text" name="memorizations[]" value="<?= e($valMem) ?>" placeholder="Contoh: Juz 30 / Surat An-Naba' / Fashahah" required
                                    style="width: 100%; padding: 8px 12px; font-weight: 700; color: var(--green-900); border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
                         </td>
-                        <td class="num" data-label="Nilai (0-100)">
-                            <input type="number" step="0.1" min="0" max="100" name="scores[]" value="<?= e($valScore) ?>" placeholder="0 - 100" required
-                                   style="width: 110px; padding: 8px 12px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
-                        </td>
                         <td data-label="Predikat" style="text-align: center;">
                             <select name="predikats[]" class="predicate-select" style="width: 78px; padding: 8px 6px; text-align: center; font-weight: 700; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
                                 <option value="">-</option>
-                                <?php foreach (['A', 'B', 'C', 'D', 'E'] as $option): ?>
+                                <?php foreach ($predicateOptions as $option): ?>
                                     <option value="<?= $option ?>" <?= $valPredikat === $option ? 'selected' : '' ?>><?= $option ?></option>
                                 <?php endforeach; ?>
                             </select>
@@ -259,14 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input type="text" name="memorizations[]" value="${escapeHtml(memorization)}" placeholder="Contoh: Juz 30 / Surat An-Naba' / Fashahah" required
                        style="width: 100%; padding: 8px 12px; font-weight: 700; color: var(--green-900); border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
             </td>
-            <td class="num" data-label="Nilai (0-100)">
-                <input type="number" step="0.1" min="0" max="100" name="scores[]" value="${escapeHtml(score)}" placeholder="0 - 100" required
-                       style="width: 110px; padding: 8px 12px; font-size: 14px; text-align: center; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-family: inherit;">
-            </td>
             <td data-label="Predikat" style="text-align: center;">
                 <select name="predikats[]" class="predicate-select" style="width: 78px; padding: 8px 6px; text-align: center; font-weight: 700; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
                     <option value="">-</option>
-                    ${['A', 'B', 'C', 'D', 'E'].map(option => `<option value="${option}" ${option === predikat ? 'selected' : ''}>${option}</option>`).join('')}
+                    ${['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E'].map(option => `<option value="${option}" ${option === predikat ? 'selected' : ''}>${option}</option>`).join('')}
                 </select>
             </td>
             <td data-label="Catatan Guru">

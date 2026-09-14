@@ -183,7 +183,7 @@ function rapor_description(float $score): string
 function rapor_stored_grade(array $grade): string
 {
     $predicate = strtoupper(trim((string)($grade['predikat'] ?? '')));
-    return in_array($predicate, ['A', 'B', 'C', 'D', 'E'], true)
+    return in_array($predicate, ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E'], true)
         ? $predicate
         : rapor_grade((float)($grade['score'] ?? 0));
 }

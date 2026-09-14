@@ -182,8 +182,19 @@ body {
     text-align: center;
     padding: 16px 25px 26px;
     font-size: 13px;
+    line-height: 1.25;
     color: #456251;
     border-top: 1px solid #E2F2E7;
+}
+
+.login-footer p {
+    margin: 4px 0;
+}
+
+.login-footer .developer-credit {
+    margin-top: 8px;
+    font-size: 11px;
+    white-space: nowrap;
 }
 
 .login-footer a {
@@ -205,4 +216,11 @@ body {
     font-weight: 600;
     margin-bottom: 20px;
     border-left: 4px solid #DC2626;
+}
+
+@media (max-width: 430px) {
+    .login-footer .developer-credit {
+        white-space: normal;
+        font-size: 10.5px;
+    }
 }

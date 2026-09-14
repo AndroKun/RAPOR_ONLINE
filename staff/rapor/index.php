@@ -13,6 +13,11 @@ $contentTitle = 'Manajemen & Publikasi Rapor Elektronik';
 $contentSubtitle = 'Cetak dokumen PDF dan publikasikan hasil rapor santri MTs Tahfidh.';
 $activeMenu = 'rapor';
 
+$user = current_user();
+$isAdmin = ($user['role'] ?? '') === 'admin';
+$isWaliKelas = ($user['role'] ?? '') === 'wali_kelas';
+$waliKelas = current_user_wali_kelas_class();
+
 $semester = (int)($_GET['semester'] ?? 2);
 $schoolYear = trim($_GET['school_year'] ?? '2025/2026');
 $kelasFilter = trim($_GET['kelas'] ?? '');
@@ -35,6 +40,12 @@ $params = [
     'sem_report' => $semester,
     'sy_report' => $schoolYear,
 ];
+
+if ($isWaliKelas && $waliKelas !== null && $waliKelas !== '') {
+    $sql .= " AND (s.kelas = :scope_kelas_1 OR s.kelas = :scope_kelas_2)";
+    $params['scope_kelas_1'] = $waliKelas;
+    $params['scope_kelas_2'] = $waliKelas;
+}
 
 if ($search !== '') {
     $sql .= " AND (s.nama LIKE :q_nama OR s.nisn LIKE :q_nisn)";
@@ -71,6 +82,8 @@ $reports = $stmt->fetchAll();
 
 $user = current_user();
 $isAdmin = ($user['role'] ?? '') === 'admin';
+$isWaliKelas = ($user['role'] ?? '') === 'wali_kelas';
+$waliKelas = current_user_wali_kelas_class();
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>

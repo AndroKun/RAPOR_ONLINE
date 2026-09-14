@@ -9,6 +9,7 @@ $activeMenu = $activeMenu ?? 'dashboard';
 $user = current_user();
 $userRole = $user['role'] ?? 'staff';
 $isAdmin = ($userRole === 'admin');
+$isWaliKelas = ($userRole === 'wali_kelas');
 $isGuruTahfidh = ($userRole === 'guru_tahfidh');
 $isGuruMapel = ($userRole === 'staff');
 ?>
@@ -22,6 +23,7 @@ $isGuruMapel = ($userRole === 'staff');
     </div>
     
     <ul class="nav">
+        <?php if ($isAdmin || $isWaliKelas || $isGuruTahfidh || $isGuruMapel === false): ?>
         <li>
             <a href="<?= e(base_url('/staff/dashboard.php')) ?>" class="<?= $activeMenu === 'dashboard' ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -33,8 +35,9 @@ $isGuruMapel = ($userRole === 'staff');
                 <span>Dashboard Utama</span>
             </a>
         </li>
+        <?php endif; ?>
 
-        <?php if ($isAdmin || $isGuruMapel): ?>
+        <?php if ($isAdmin || $isGuruMapel || $isWaliKelas): ?>
         <li>
             <a href="<?= e(base_url('/staff/nilai/index.php')) ?>" class="<?= in_array($activeMenu, ['nilai', 'inputnilai']) ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -46,7 +49,7 @@ $isGuruMapel = ($userRole === 'staff');
         </li>
         <?php endif; ?>
 
-        <?php if ($isAdmin || $isGuruTahfidh): ?>
+        <?php if ($isAdmin || $isGuruTahfidh || $isWaliKelas): ?>
         <li>
             <a href="<?= e(base_url('/staff/tahfidh/index.php')) ?>" class="<?= $activeMenu === 'tahfidh' ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -78,7 +81,7 @@ $isGuruMapel = ($userRole === 'staff');
             </a>
         </li>
 
-        <?php if ($isAdmin): ?>
+        <?php if ($isAdmin || $isWaliKelas): ?>
         <li>
             <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="<?= in_array($activeMenu, ['siswa', 'inputsiswa']) ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -89,6 +92,9 @@ $isGuruMapel = ($userRole === 'staff');
                 <span>Input Data Siswa</span>
             </a>
         </li>
+        <?php endif; ?>
+
+        <?php if ($isAdmin): ?>
         <li>
             <a href="<?= e(base_url('/staff/mapel/index.php')) ?>" class="<?= $activeMenu === 'mapel' ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">

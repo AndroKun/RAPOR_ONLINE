@@ -11,9 +11,11 @@ require_login();
 $user = current_user();
 $userRole = $user['role'] ?? 'staff';
 $isAdmin = ($userRole === 'admin');
+$isWaliKelas = ($userRole === 'wali_kelas');
 $isGuruTahfidh = ($userRole === 'guru_tahfidh');
 $isGuruMapel = ($userRole === 'staff');
 $teacherMapel = trim((string)($user['mata_pelajaran'] ?? ''));
+$waliKelas = current_user_wali_kelas_class();
 
 // Handle POST request untuk Hapus Riwayat Nilai
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_history') {
@@ -194,6 +196,11 @@ if ($isAdmin) {
 $sqlParts = [];
 $params = [];
 
+$filterClassForWali = null;
+if ($isWaliKelas && $waliKelas !== null && $waliKelas !== '') {
+    $filterClassForWali = $waliKelas;
+}
+
 // ACADEMIC QUERY SECTION (Only for Admin or Guru Mapel)
 if ($isAdmin || $isGuruMapel) {
     if (!($isAdmin && $kategoriFilter === 'tahfidh')) {
@@ -233,6 +240,11 @@ if ($isAdmin || $isGuruMapel) {
             };
             $params['kelas_a1'] = $kMapA[0];
             $params['kelas_a2'] = $kMapA[1];
+        }
+        if ($filterClassForWali !== null) {
+            $acadSql .= " AND (s.kelas = :wali_kelas_acad_1 OR s.kelas = :wali_kelas_acad_2)";
+            $params['wali_kelas_acad_1'] = $filterClassForWali;
+            $params['wali_kelas_acad_2'] = $filterClassForWali;
         }
         if ($semesterFilter !== null) {
             $acadSql .= " AND ag.semester = :sem_a";
@@ -281,6 +293,11 @@ if ($isAdmin || $isGuruTahfidh) {
             };
             $params['kelas_t1'] = $kMapT[0];
             $params['kelas_t2'] = $kMapT[1];
+        }
+        if ($filterClassForWali !== null) {
+            $tahfSql .= " AND (s.kelas = :wali_kelas_tahf_1 OR s.kelas = :wali_kelas_tahf_2)";
+            $params['wali_kelas_tahf_1'] = $filterClassForWali;
+            $params['wali_kelas_tahf_2'] = $filterClassForWali;
         }
         if ($semesterFilter !== null) {
             $tahfSql .= " AND tg.semester = :sem_t";

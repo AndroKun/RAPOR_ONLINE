@@ -58,29 +58,74 @@ function require_role(string $role): void
 }
 
 /**
- * Guard tahfidh routes: accessible only by Admin or Guru Tahfidh
+ * Redirect user to role-specific page after login.
+ */
+function user_home_route(?array $user = null): string
+{
+    $u = $user ?? current_user();
+    $role = $u['role'] ?? 'staff';
+
+    if ($role === 'guru_tahfidh') {
+        return '/staff/tahfidh/index.php';
+    }
+
+    if ($role === 'staff') {
+        return '/staff/nilai/index.php';
+    }
+
+    if ($role === 'wali_kelas') {
+        return '/staff/dashboard.php';
+    }
+
+    return '/staff/dashboard.php';
+}
+
+/**
+ * Determine whether role has a full admin-like access set besides role-specific admin management.
+ */
+function is_admin_like_role(string $role): bool
+{
+    return in_array($role, ['admin', 'wali_kelas'], true);
+}
+
+/**
+ * For wali kelas, filter all data to class bound in user profile.
+ */
+function current_user_wali_kelas_class(): ?string
+{
+    $user = current_user();
+    if (($user['role'] ?? '') !== 'wali_kelas') {
+        return null;
+    }
+
+    $kelas = trim((string)($user['kelas_wali'] ?? ''));
+    return $kelas !== '' ? $kelas : null;
+}
+
+/**
+ * Guard tahfidh routes: accessible only by Admin, Guru Tahfidh or Wali Kelas
  */
 function require_tahfidh_access(): void
 {
     require_login();
     $user = current_user();
     $role = $user['role'] ?? 'staff';
-    if ($role !== 'admin' && $role !== 'guru_tahfidh') {
-        set_flash('danger', 'Akses ditolak: Menu Nilai Tahfidh hanya dapat diakses oleh Guru Tahfidh atau Administrator.');
+    if ($role !== 'admin' && $role !== 'guru_tahfidh' && $role !== 'wali_kelas') {
+        set_flash('danger', 'Akses ditolak: Menu Nilai Tahfidh hanya dapat diakses oleh Guru Tahfidh, Wali Kelas atau Administrator.');
         redirect('/staff/dashboard.php');
     }
 }
 
 /**
- * Guard academic routes: accessible only by Admin or Guru Mata Pelajaran (staff)
+ * Guard academic routes: accessible only by Admin, Guru Mata Pelajaran (staff) or Wali Kelas
  */
 function require_academic_access(): void
 {
     require_login();
     $user = current_user();
     $role = $user['role'] ?? 'staff';
-    if ($role !== 'admin' && $role !== 'staff') {
-        set_flash('danger', 'Akses ditolak: Menu Nilai Akademik khusus untuk Guru Mata Pelajaran atau Administrator.');
+    if ($role !== 'admin' && $role !== 'staff' && $role !== 'wali_kelas') {
+        set_flash('danger', 'Akses ditolak: Menu Nilai Akademik khusus untuk Guru Mata Pelajaran, Wali Kelas atau Administrator.');
         redirect('/staff/dashboard.php');
     }
 }

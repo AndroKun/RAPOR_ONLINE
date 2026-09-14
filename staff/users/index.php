@@ -12,7 +12,7 @@ $pageTitle = 'Kelola Pengguna - MTs Roudlotul Qur\'an';
 $contentTitle = 'Manajemen Akun Staf & Guru';
 $activeMenu = 'users';
 
-$stmt = $pdo->query("SELECT id, username, nama_lengkap, role, mata_pelajaran, is_active, created_at FROM users ORDER BY role ASC, nama_lengkap ASC");
+$stmt = $pdo->query("SELECT id, username, nama_lengkap, role, mata_pelajaran, kelas_wali, is_active, created_at FROM users ORDER BY role ASC, nama_lengkap ASC");
 $users = $stmt->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
@@ -48,6 +48,8 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <span class="badge badge-danger">ADMINISTRATOR</span>
                             <?php elseif ($u['role'] === 'guru_tahfidh'): ?>
                                 <span class="badge badge-success">GURU TAHFIDH</span>
+                            <?php elseif ($u['role'] === 'wali_kelas'): ?>
+                                <span class="badge badge-primary">WALI KELAS</span>
                             <?php else: ?>
                                 <span class="badge badge-info">GURU MAPEL</span>
                             <?php endif; ?>
@@ -57,6 +59,8 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <span class="badge badge-success">📘 <?= e($u['mata_pelajaran']) ?></span>
                             <?php elseif ($u['role'] === 'admin'): ?>
                                 <span class="badge badge-secondary">Semua Mapel (Admin)</span>
+                            <?php elseif ($u['role'] === 'wali_kelas'): ?>
+                                <span class="badge badge-primary">Kelas <?= e($u['kelas_wali'] ?? '-') ?></span>
                             <?php else: ?>
                                 <span class="badge badge-warning">Belum Diatur</span>
                             <?php endif; ?>

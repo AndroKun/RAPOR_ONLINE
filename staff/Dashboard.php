@@ -8,6 +8,17 @@ require_once __DIR__ . '/../includes/auth.php';
 
 require_login();
 
+$user = current_user();
+$userRole = $user['role'] ?? 'staff';
+$waliKelas = current_user_wali_kelas_class();
+
+if ($userRole === 'staff') {
+    redirect('/staff/nilai/index.php');
+}
+if ($userRole === 'guru_tahfidh') {
+    redirect('/staff/tahfidh/index.php');
+}
+
 $semester = 2;
 $schoolYear = '2025/2026';
 
@@ -28,14 +39,23 @@ $sql = "SELECT s.id, s.nis, s.nisn, s.nama, s.kelas,
                r.pdf_path
         FROM students s
         LEFT JOIN reports r ON r.student_id = s.id AND r.semester = :sem3 AND r.school_year = :sy3
-        ORDER BY s.kelas ASC, s.nama ASC";
+        WHERE 1=1";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([
+$params = [
     'sem1' => $semester, 'sy1' => $schoolYear,
     'sem2' => $semester, 'sy2' => $schoolYear,
     'sem3' => $semester, 'sy3' => $schoolYear,
-]);
+];
+
+if ($userRole === 'wali_kelas' && $waliKelas !== null && $waliKelas !== '') {
+    $sql .= " AND s.kelas = :scope_kelas";
+    $params['scope_kelas'] = $waliKelas;
+}
+
+$sql .= " ORDER BY s.kelas ASC, s.nama ASC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $studentRows = $stmt->fetchAll();
 
 // 3. Hitung Progress & Rapor Siap Cetak

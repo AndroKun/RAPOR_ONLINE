@@ -44,11 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string)($_POST['password'] ?? '');
     $role = $_POST['role'] ?? 'staff';
     $mata_pelajaran = trim($_POST['mata_pelajaran'] ?? '');
+    $kelas_wali = trim($_POST['kelas_wali'] ?? '');
     $is_active = (int)($_POST['is_active'] ?? 1);
 
     if ($username === '') $errors[] = 'Username wajib diisi.';
     if ($nama_lengkap === '') $errors[] = 'Nama Lengkap wajib diisi.';
-    if (!in_array($role, ['admin', 'staff', 'guru_tahfidh'], true)) $errors[] = 'Hak akses / role tidak valid.';
+    if (!in_array($role, ['admin', 'staff', 'guru_tahfidh', 'wali_kelas'], true)) $errors[] = 'Hak akses / role tidak valid.';
 
     if (empty($errors)) {
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = :u AND id != :id LIMIT 1");
@@ -65,18 +66,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($role === 'guru_tahfidh') {
             $mapelValue = 'Tahfidh Al-Qur\'an';
         }
+        $kelasWaliValue = $role === 'wali_kelas' ? $kelas_wali : null;
 
         if ($password !== '') {
             if (strlen($password) < 6) {
                 $errors[] = 'Password baru minimal 6 karakter.';
             } else {
                 $hash = password_hash($password, PASSWORD_DEFAULT);
-                $stmtUpdate = $pdo->prepare("UPDATE users SET username = :u, password_hash = :p, nama_lengkap = :n, role = :r, mata_pelajaran = :m, is_active = :a WHERE id = :id");
-                $stmtUpdate->execute(['u' => $username, 'p' => $hash, 'n' => $nama_lengkap, 'r' => $role, 'm' => $mapelValue, 'a' => $is_active, 'id' => $id]);
+                $stmtUpdate = $pdo->prepare("UPDATE users SET username = :u, password_hash = :p, nama_lengkap = :n, role = :r, mata_pelajaran = :m, kelas_wali = :k, is_active = :a WHERE id = :id");
+                $stmtUpdate->execute(['u' => $username, 'p' => $hash, 'n' => $nama_lengkap, 'r' => $role, 'm' => $mapelValue, 'k' => $kelasWaliValue, 'a' => $is_active, 'id' => $id]);
             }
         } else {
-            $stmtUpdate = $pdo->prepare("UPDATE users SET username = :u, nama_lengkap = :n, role = :r, mata_pelajaran = :m, is_active = :a WHERE id = :id");
-            $stmtUpdate->execute(['u' => $username, 'n' => $nama_lengkap, 'r' => $role, 'm' => $mapelValue, 'a' => $is_active, 'id' => $id]);
+            $stmtUpdate = $pdo->prepare("UPDATE users SET username = :u, nama_lengkap = :n, role = :r, mata_pelajaran = :m, kelas_wali = :k, is_active = :a WHERE id = :id");
+            $stmtUpdate->execute(['u' => $username, 'n' => $nama_lengkap, 'r' => $role, 'm' => $mapelValue, 'k' => $kelasWaliValue, 'a' => $is_active, 'id' => $id]);
         }
 
         if (empty($errors)) {
@@ -143,7 +145,18 @@ require_once __DIR__ . '/../../includes/header.php';
             <select name="role" id="roleSelect" onchange="toggleMapelField(this.value)" required>
                 <option value="staff" <?= $role === 'staff' ? 'selected' : '' ?>>Guru Mata Pelajaran (Input Nilai Akademik)</option>
                 <option value="guru_tahfidh" <?= $role === 'guru_tahfidh' ? 'selected' : '' ?>>Guru Tahfidh Al-Qur'an (Input Nilai Tahfidh)</option>
+                <option value="wali_kelas" <?= $role === 'wali_kelas' ? 'selected' : '' ?>>Wali Kelas (Akses Kelas Sendiri)</option>
                 <option value="admin" <?= $role === 'admin' ? 'selected' : '' ?>>Administrator (Akses Penuh Semua Menu &amp; Publikasi)</option>
+            </select>
+        </div>
+
+        <div class="field" id="waliKelasGroup" style="margin-bottom: 20px; <?= $role !== 'wali_kelas' ? 'display:none;' : '' ?>">
+            <label>Kelas Wali *</label>
+            <select name="kelas_wali" required>
+                <option value="">Pilih Kelas</option>
+                <option value="VII" <?= ($kelas_wali ?? '') === 'VII' ? 'selected' : '' ?>>VII</option>
+                <option value="VIII" <?= ($kelas_wali ?? '') === 'VIII' ? 'selected' : '' ?>>VIII</option>
+                <option value="IX" <?= ($kelas_wali ?? '') === 'IX' ? 'selected' : '' ?>>IX</option>
             </select>
         </div>
 
@@ -180,8 +193,12 @@ require_once __DIR__ . '/../../includes/header.php';
 <script>
 function toggleMapelField(role) {
     const mapelGroup = document.getElementById('mapelGroup');
+    const waliKelasGroup = document.getElementById('waliKelasGroup');
     if (mapelGroup) {
         mapelGroup.style.display = (role === 'staff') ? 'flex' : 'none';
+    }
+    if (waliKelasGroup) {
+        waliKelasGroup.style.display = (role === 'wali_kelas') ? 'flex' : 'none';
     }
 }
 

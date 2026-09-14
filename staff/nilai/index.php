@@ -10,7 +10,9 @@ require_academic_access();
 
 $user = current_user();
 $isAdmin = (($user['role'] ?? '') === 'admin');
+$isWaliKelas = (($user['role'] ?? '') === 'wali_kelas');
 $teacherMapel = trim((string)($user['mata_pelajaran'] ?? ''));
+$waliKelas = current_user_wali_kelas_class();
 
 $pageTitle = 'Nilai ' . ($isAdmin ? 'Akademik' : $teacherMapel) . ' - MTs Roudlotul Qur\'an';
 if ($isAdmin) {
@@ -44,6 +46,12 @@ $params = [
     't_mapel_pred' => $teacherMapel,
     't_mapel_desc' => $teacherMapel
 ];
+
+if ($isWaliKelas && $waliKelas !== null && $waliKelas !== '') {
+    $sql .= " AND (s.kelas = :scope_kelas_1 OR s.kelas = :scope_kelas_2)";
+    $params['scope_kelas_1'] = $waliKelas;
+    $params['scope_kelas_2'] = $waliKelas;
+}
 
 if ($kelasFilter !== '') {
     $sql .= " AND (s.kelas = :k1 OR s.kelas = :k2)";

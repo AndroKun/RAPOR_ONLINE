@@ -7,7 +7,7 @@ require_once __DIR__ . '/../includes/fungsi.php';
 require_once __DIR__ . '/../includes/auth.php';
 
 if (is_logged_in()) {
-    redirect('/staff/dashboard.php');
+    redirect(user_home_route(current_user()));
 }
 
 $error = '';
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($username === '' || $password === '') {
         $error = 'Username dan password wajib diisi.';
     } else {
-        $stmt = $pdo->prepare('SELECT id, username, password_hash, nama_lengkap, role, mata_pelajaran, is_active FROM users WHERE username = :username LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, username, password_hash, nama_lengkap, role, mata_pelajaran, kelas_wali, is_active FROM users WHERE username = :username LIMIT 1');
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch();
 
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($user['password_hash']);
                 $_SESSION['user'] = $user;
                 set_flash('success', "Selamat datang kembali, {$user['nama_lengkap']}!");
-                redirect('/staff/dashboard.php');
+                redirect(user_home_route($user));
             } else {
                 $error = 'Password yang Anda masukkan salah.';
             }

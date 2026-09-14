@@ -25,7 +25,13 @@ try {
     }
 
     try {
-        $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin', 'staff', 'guru_tahfidh') NOT NULL DEFAULT 'staff'");
+        $pdo->exec("ALTER TABLE `users` ADD COLUMN `kelas_wali` VARCHAR(30) NULL AFTER `mata_pelajaran`");
+    } catch (Throwable $e) {
+        // Ignored if already exists
+    }
+
+    try {
+        $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin', 'staff', 'guru_tahfidh', 'wali_kelas') NOT NULL DEFAULT 'staff'");
     } catch (Throwable $e) {
         // Ignored if already modified
     }

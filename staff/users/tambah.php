@@ -28,11 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string)($_POST['password'] ?? '');
     $role = $_POST['role'] ?? 'staff';
     $mata_pelajaran = trim($_POST['mata_pelajaran'] ?? '');
+    $kelas_wali = trim($_POST['kelas_wali'] ?? '');
 
     if ($username === '') $errors[] = 'Username wajib diisi.';
     if ($nama_lengkap === '') $errors[] = 'Nama Lengkap wajib diisi.';
     if (strlen($password) < 6) $errors[] = 'Password minimal 6 karakter.';
-    if (!in_array($role, ['admin', 'staff', 'guru_tahfidh'], true)) $errors[] = 'Hak akses / role tidak valid.';
+    if (!in_array($role, ['admin', 'staff', 'guru_tahfidh', 'wali_kelas'], true)) $errors[] = 'Hak akses / role tidak valid.';
 
     if (empty($errors)) {
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = :u LIMIT 1");
@@ -51,13 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mapelToSave = 'Tahfidh Al-Qur\'an';
         }
 
-        $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, nama_lengkap, role, mata_pelajaran, is_active) VALUES (:u, :p, :n, :r, :m, 1)");
+        $kelasWaliValue = $role === 'wali_kelas' ? $kelas_wali : null;
+        $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, nama_lengkap, role, mata_pelajaran, kelas_wali, is_active) VALUES (:u, :p, :n, :r, :m, :k, 1)");
         $stmt->execute([
             'u' => $username,
             'p' => $hash,
             'n' => $nama_lengkap,
             'r' => $role,
             'm' => $mapelToSave,
+            'k' => $kelasWaliValue,
         ]);
 
         set_flash('success', "Akun pengguna {$nama_lengkap} ({$username}) berhasil dibuat dan langsung aktif.");
@@ -114,7 +117,18 @@ require_once __DIR__ . '/../../includes/header.php';
             <select name="role" id="roleSelect" onchange="toggleMapelField(this.value)" required>
                 <option value="staff" <?= $role === 'staff' ? 'selected' : '' ?>>Guru Mata Pelajaran (Input Nilai Akademik)</option>
                 <option value="guru_tahfidh" <?= $role === 'guru_tahfidh' ? 'selected' : '' ?>>Guru Tahfidh Al-Qur'an (Input Nilai Tahfidh)</option>
+                <option value="wali_kelas" <?= $role === 'wali_kelas' ? 'selected' : '' ?>>Wali Kelas (Akses Kelas Sendiri)</option>
                 <option value="admin" <?= $role === 'admin' ? 'selected' : '' ?>>Administrator (Akses Penuh Semua Menu &amp; Publikasi)</option>
+            </select>
+        </div>
+
+        <div class="field" id="waliKelasGroup" style="margin-bottom: 20px; <?= $role !== 'wali_kelas' ? 'display:none;' : '' ?>">
+            <label>Kelas Wali *</label>
+            <select name="kelas_wali" required>
+                <option value="">Pilih Kelas</option>
+                <option value="VII">VII</option>
+                <option value="VIII">VIII</option>
+                <option value="IX">IX</option>
             </select>
         </div>
 
@@ -143,8 +157,12 @@ require_once __DIR__ . '/../../includes/header.php';
 <script>
 function toggleMapelField(role) {
     const mapelGroup = document.getElementById('mapelGroup');
+    const waliKelasGroup = document.getElementById('waliKelasGroup');
     if (mapelGroup) {
         mapelGroup.style.display = (role === 'staff') ? 'flex' : 'none';
+    }
+    if (waliKelasGroup) {
+        waliKelasGroup.style.display = (role === 'wali_kelas') ? 'flex' : 'none';
     }
 }
 

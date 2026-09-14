@@ -14,8 +14,9 @@ CREATE TABLE IF NOT EXISTS `users` (
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL,
     `nama_lengkap` VARCHAR(100) NOT NULL,
-    `role` ENUM('admin', 'staff', 'guru_tahfidh') NOT NULL DEFAULT 'staff',
+    `role` ENUM('admin', 'staff', 'guru_tahfidh', 'wali_kelas') NOT NULL DEFAULT 'staff',
     `mata_pelajaran` VARCHAR(100) NULL,
+    `kelas_wali` VARCHAR(30) NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

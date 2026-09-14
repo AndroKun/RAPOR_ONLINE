@@ -17,6 +17,9 @@ $semester = (int)($_GET['semester'] ?? 2);
 $schoolYear = trim($_GET['school_year'] ?? '2025/2026');
 $kelasFilter = trim($_GET['kelas'] ?? '');
 $search = trim($_GET['q'] ?? '');
+$user = current_user();
+$isWaliKelas = (($user['role'] ?? '') === 'wali_kelas');
+$waliKelas = current_user_wali_kelas_class();
 
 $sql = "SELECT s.id, s.nis, s.nisn, s.nama, s.kelas,
         COUNT(tg.id) as total_hafalan,
@@ -26,6 +29,12 @@ $sql = "SELECT s.id, s.nis, s.nisn, s.nama, s.kelas,
         WHERE 1=1";
 
 $params = ['sem' => $semester, 'sy' => $schoolYear];
+
+if ($isWaliKelas && $waliKelas !== null && $waliKelas !== '') {
+    $sql .= " AND (s.kelas = :scope_kelas_1 OR s.kelas = :scope_kelas_2)";
+    $params['scope_kelas_1'] = $waliKelas;
+    $params['scope_kelas_2'] = $waliKelas;
+}
 
 if ($kelasFilter !== '') {
     // Cocokkan VII / 7, VIII / 8, IX / 9

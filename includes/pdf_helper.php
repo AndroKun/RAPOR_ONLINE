@@ -255,10 +255,12 @@ function rapor_biodata(RaporTemplatePDF $pdf, array $student): void
         ['15. Nama Wali', rapor_text($student['nama_wali'])], ['16. Alamat Wali', rapor_text($student['alamat_wali'])],
         ['17. Pekerjaan', rapor_text($student['pekerjaan_wali'])],
     ];
-    $pdf->SetFont('Helvetica', '', 9);
     $y = 58;
     foreach ($fields as $field) {
-        $pdf->SetXY(20, $y); $pdf->Cell(62, 6, $field[0], 0, 0); $pdf->Cell(4, 6, ':', 0, 0); $pdf->Cell(108, 6, $field[1], 0, 1); $y += 6.6;
+        $pdf->SetFont('Helvetica', 'B', 9);
+        $pdf->SetXY(20, $y); $pdf->Cell(62, 6, $field[0], 0, 0); $pdf->Cell(4, 6, ':', 0, 0);
+        $pdf->SetFont('Helvetica', '', 9);
+        $pdf->Cell(108, 6, $field[1], 0, 1); $y += 6.6;
     }
     $pdf->SetFont('Helvetica', '', 8); $pdf->SetXY(125, 258); $pdf->Cell(65, 5, 'Sidoarjo, ' . date('d-m-Y'), 0, 1, 'C');
     $pdf->SetXY(119, 265); $pdf->Cell(65, 5, 'KEPALA MADRASAH', 0, 1, 'C'); $pdf->SetXY(125, 290); $pdf->Cell(65, 5, '(nama kepala sekolah)', 0, 1, 'C');

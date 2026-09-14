@@ -81,7 +81,7 @@ $isGuruMapel = ($userRole === 'staff');
             </a>
         </li>
 
-        <?php if ($isAdmin || $isWaliKelas): ?>
+        <?php if ($isAdmin): ?>
         <li>
             <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="<?= in_array($activeMenu, ['siswa', 'inputsiswa']) ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">

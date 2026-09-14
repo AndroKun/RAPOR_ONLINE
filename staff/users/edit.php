@@ -34,6 +34,7 @@ $nama_lengkap = $userTarget['nama_lengkap'];
 $username = $userTarget['username'];
 $role = $userTarget['role'];
 $mata_pelajaran = $userTarget['mata_pelajaran'] ?? '';
+$kelas_wali = trim((string)($userTarget['kelas_wali'] ?? ''));
 $is_active = (int)$userTarget['is_active'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

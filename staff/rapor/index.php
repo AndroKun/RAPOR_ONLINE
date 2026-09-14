@@ -103,12 +103,18 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
 
         <div style="min-width: 150px;">
-            <select id="selectKelasRapor" onchange="applyRaporFilter()">
-                <option value="">Semua Kelas (7, 8, 9)</option>
-                <option value="VII" <?= in_array($kelasFilter, ['VII', '7']) ? 'selected' : '' ?>>Kelas 7 (VII)</option>
-                <option value="VIII" <?= in_array($kelasFilter, ['VIII', '8']) ? 'selected' : '' ?>>Kelas 8 (VIII)</option>
-                <option value="IX" <?= in_array($kelasFilter, ['IX', '9']) ? 'selected' : '' ?>>Kelas 9 (IX)</option>
-            </select>
+            <?php if ($isWaliKelas && $waliKelas !== null && $waliKelas !== ''): ?>
+                <select id="selectKelasRapor" onchange="applyRaporFilter()">
+                    <option value="<?= e($waliKelas) ?>" selected><?= $waliKelas === 'IX' ? 'Kelas 9 (IX)' : ($waliKelas === 'VIII' ? 'Kelas 8 (VIII)' : 'Kelas 7 (VII)') ?></option>
+                </select>
+            <?php else: ?>
+                <select id="selectKelasRapor" onchange="applyRaporFilter()">
+                    <option value="">Semua Kelas (7, 8, 9)</option>
+                    <option value="VII" <?= in_array($kelasFilter, ['VII', '7']) ? 'selected' : '' ?>>Kelas 7 (VII)</option>
+                    <option value="VIII" <?= in_array($kelasFilter, ['VIII', '8']) ? 'selected' : '' ?>>Kelas 8 (VIII)</option>
+                    <option value="IX" <?= in_array($kelasFilter, ['IX', '9']) ? 'selected' : '' ?>>Kelas 9 (IX)</option>
+                </select>
+            <?php endif; ?>
         </div>
 
         <div style="min-width: 160px;">

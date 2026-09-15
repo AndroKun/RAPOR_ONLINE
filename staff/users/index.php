@@ -49,6 +49,8 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <span class="badge badge-danger">ADMINISTRATOR</span>
                             <?php elseif ($u['role'] === 'guru_tahfidh'): ?>
                                 <span class="badge badge-success">GURU TAHFIDH</span>
+                            <?php elseif ($u['role'] === 'guru_bahasa_arab'): ?>
+                                <span class="badge badge-info" style="background:#0284c7; color:#fff;">GURU BAHASA ARAB</span>
                             <?php elseif ($u['role'] === 'wali_kelas'): ?>
                                 <span class="badge badge-primary">WALI KELAS</span>
                             <?php else: ?>

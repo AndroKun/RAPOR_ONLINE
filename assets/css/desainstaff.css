@@ -1107,6 +1107,7 @@ td.predikat {
 @media (max-width: 900px) {
   .backdrop {
     display: block;
+    z-index: 1000;
   }
 
   .sidebar {
@@ -1114,7 +1115,7 @@ td.predikat {
     top: 0;
     left: 0;
     height: 100%;
-    z-index: 50;
+    z-index: 1002;
     transform: translateX(-100%);
     transition: transform 0.22s ease;
   }
@@ -1129,26 +1130,58 @@ td.predikat {
 
   .menu-toggle {
     display: inline-flex;
-    position: fixed;
-    top: 16px;
-    right: 18px;
-    z-index: 45;
+    align-items: center;
+    gap: 8px;
+    position: fixed !important;
+    top: 14px;
+    right: 16px;
+    z-index: 995;
     margin-bottom: 0;
-    box-shadow: 0 6px 18px rgba(18, 99, 54, 0.16);
-    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    background: #FFFFFF;
+    color: var(--green-800);
+    border: 1.5px solid var(--green-700);
+    border-radius: 50px;
+    padding: 8px 16px;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    box-shadow: 0 8px 24px rgba(18, 99, 54, 0.22), 0 2px 6px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .menu-toggle:hover,
   .menu-toggle:focus-visible {
-    background: var(--green-700);
-    border-color: var(--green-700);
+    background: var(--green-800);
+    border-color: var(--green-900);
     color: #FFFFFF;
-    box-shadow: 0 8px 20px rgba(18, 99, 54, 0.25);
-    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(18, 99, 54, 0.38), 0 4px 10px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px) scale(1.04);
+  }
+
+  .menu-toggle:active {
+    transform: translateY(1px) scale(0.97);
+    box-shadow: 0 4px 12px rgba(18, 99, 54, 0.2);
+  }
+
+  .menu-toggle svg {
+    transition: transform 0.2s ease;
+  }
+
+  .menu-toggle:hover svg {
+    transform: rotate(90deg);
   }
 
   .main {
     padding: 20px 18px 50px;
+  }
+
+  .topbar {
+    padding-right: 96px;
   }
 
   .stats {

@@ -42,13 +42,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtTah->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
                 $tahfidhGrades = $stmtTah->fetchAll();
 
+                $stmtArab = $pdo->prepare("SELECT * FROM arabic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY urutan ASC, id ASC");
+                $stmtArab->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+                $arabicGrades = $stmtArab->fetchAll();
+
+                $stmtNotes = $pdo->prepare("SELECT * FROM arabic_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+                $stmtNotes->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+                $arabicNotes = $stmtNotes->fetch() ?: [];
+
                 // Simpan PDF fisik dengan hash unik
                 $uniqueHash = hash('sha256', "student_{$studentId}_sem_{$semester}_sy_{$schoolYear}");
                 $pdfFileName = "rapor_{$studentId}_{$semester}_{$uniqueHash}.pdf";
                 $pdfFullPath = $uploadDir . '/' . $pdfFileName;
 
                 $tempReport = ['semester' => $semester, 'school_year' => $schoolYear, 'status' => 'published'];
-                generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $tempReport, 'F', $pdfFullPath);
+                generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $tempReport, 'F', $pdfFullPath, $arabicGrades, $arabicNotes);
 
                 // Update database
                 $stmtUp = $pdo->prepare("INSERT INTO reports (student_id, semester, school_year, status, pdf_path, published_at) 

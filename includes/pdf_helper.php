@@ -242,18 +242,18 @@ function rapor_biodata(RaporTemplatePDF $pdf, array $student): void
     rapor_header($pdf, 'DATA DIRI SISWA', true);
     $fields = [
         ['1. Nama Siswa', rapor_text($student['nama'])], ['2. Nomor Induk', rapor_text($student['nis'])],
-        ['3. NIS Nasional', rapor_text($student['nisn'])], ['4. Jenis Kelamin', rapor_text($student['jenis_kelamin'])],
-        ['5. Tempat dan Tgl Lahir', trim(rapor_text($student['tempat_lahir']) . ', ' . rapor_text($student['tanggal_lahir']))],
-        ['6. Agama', rapor_text($student['agama'])], ['7. Anak Ke', rapor_text($student['anak_ke'])],
-        ['8. Status di Keluarga', rapor_text($student['status_keluarga'])], ['9. Alamat Siswa', rapor_text($student['alamat'])],
-        ['10. Diterima di sekolah ini', ''], ['   a. Di Kelas', rapor_text($student['kelas'])],
-        ['   b. Pada Tanggal', rapor_text($student['tanggal_diterima'])], ['11. Sekolah Asal', ''],
-        ['   a. Nama Sekolah', rapor_text($student['sekolah_asal'])], ['   b. Alamat Sekolah', rapor_text($student['alamat_sekolah_asal'])],
-        ['12. Nama Orang Tua', ''], ['   a. Ayah', rapor_text($student['nama_ayah'])], ['   b. Ibu', rapor_text($student['nama_ibu'])],
-        ['13. Alamat Orang Tua', rapor_text($student['alamat_orang_tua'])], ['14. Pekerjaan Orang Tua', ''],
-        ['   a. Ayah', rapor_text($student['pekerjaan_ayah'])], ['   b. Ibu', rapor_text($student['pekerjaan_ibu'])],
-        ['15. Nama Wali', rapor_text($student['nama_wali']), true], ['16. Alamat Wali', rapor_text($student['alamat_wali'])],
-        ['17. Pekerjaan', rapor_text($student['pekerjaan_wali'])],
+        ['3. NIS Nasional', rapor_text($student['nisn'] ?? '')], ['4. Jenis Kelamin', rapor_text($student['jenis_kelamin'] ?? '')],
+        ['5. Tempat dan Tgl Lahir', trim(rapor_text($student['tempat_lahir'] ?? '') . ', ' . rapor_text($student['tanggal_lahir'] ?? ''))],
+        ['6. Agama', rapor_text($student['agama'] ?? '')], ['7. Anak Ke', rapor_text($student['anak_ke'] ?? '')],
+        ['8. Status di Keluarga', rapor_text($student['status_keluarga'] ?? '')], ['9. Alamat Siswa', rapor_text($student['alamat'] ?? '')],
+        ['10. Diterima di sekolah ini', ''], ['   a. Di Kelas', rapor_text($student['kelas'] ?? '')],
+        ['   b. Pada Tanggal', rapor_text($student['tanggal_diterima'] ?? '')], ['11. Sekolah Asal', ''],
+        ['   a. Nama Sekolah', rapor_text($student['sekolah_asal'] ?? '')], ['   b. Alamat Sekolah', rapor_text($student['alamat_sekolah_asal'] ?? '')],
+        ['12. Nama Orang Tua', ''], ['   a. Ayah', rapor_text($student['nama_ayah'] ?? '')], ['   b. Ibu', rapor_text($student['nama_ibu'] ?? '')],
+        ['13. Alamat Orang Tua', rapor_text($student['alamat_orang_tua'] ?? '')], ['14. Pekerjaan Orang Tua', ''],
+        ['   a. Ayah', rapor_text($student['pekerjaan_ayah'] ?? '')], ['   b. Ibu', rapor_text($student['pekerjaan_ibu'] ?? '')],
+        ['15. Nama Wali', rapor_text($student['nama_wali'] ?? ''), true], ['16. Alamat Wali', rapor_text($student['alamat_wali'] ?? '')],
+        ['17. Pekerjaan', rapor_text($student['pekerjaan_wali'] ?? '')],
     ];
     $y = 58;
     foreach ($fields as $field) {
@@ -364,13 +364,109 @@ function rapor_tahfidh_page(RaporTemplatePDF $pdf, array $student, array $report
     $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(18, 151); $pdf->Cell(80, 6, 'GRADE  A : Melampaui Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         B : Sesuai Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         C : Belum sesuai target', 0, 1); $pdf->SetXY(115, 151); $pdf->Cell(70, 6, 'Diberikan di : Sidoarjo', 0, 1); $pdf->SetX(115); $pdf->Cell(70, 6, 'Tanggal : ' . date('d-m-Y'), 0, 1); $pdf->SetXY(115, 184); $pdf->Cell(70, 6, '(Nama)', 0, 1, 'C'); $pdf->SetXY(18, 205); $pdf->Cell(80, 6, 'Saran - saran :', 0, 1); for ($i = 1; $i <= 3; $i++) { $pdf->SetX(22); $pdf->Cell(80, 7, $i . '.', 0, 1); }
 }
 
-function rapor_arab_page(RaporTemplatePDF $pdf, array $student, array $report, array $grades): void
+function rapor_arab_page(RaporTemplatePDF $pdf, array $student, array $report, array $grades = [], array $notes = []): void
 {
-    rapor_header($pdf, 'LAPORAN HASIL PEMBELAJARAN BAHASA ARAB'); $pdf->SetFont('Helvetica', 'B', 12); $pdf->SetXY(14, 59); $pdf->Cell(182, 7, 'MTS ROUDLOTUL QUR\'AN', 0, 1, 'C'); $pdf->SetFont('Helvetica', 'B', 10); $pdf->SetXY(14, 68); $pdf->Cell(182, 7, 'TAHUN PELAJARAN ' . rapor_text($report['school_year'] ?? '', '2025/2026'), 0, 1, 'C'); rapor_student_info($pdf, $student, $report, 82, false); $pdf->SetY(111); $pdf->SetFont('Helvetica', 'B', 9);
-    rapor_table_cell($pdf, 18, 9, 'NO', 'C'); rapor_table_cell($pdf, 62, 9, 'Elemen', 'C'); rapor_table_cell($pdf, 30, 9, 'Nilai', 'C'); rapor_table_cell($pdf, 72, 9, 'Keterangan', 'C'); $pdf->Ln(); $pdf->SetFont('Helvetica', '', 8); $count = min(count($grades), 4);
-    foreach ($grades as $i => $grade) { if ($i >= 4) break; rapor_table_cell($pdf, 18, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 8, rapor_text($grade['subject'])); rapor_table_cell($pdf, 30, 8, number_format((float)$grade['score'], 0), 'C'); rapor_table_cell($pdf, 72, 8, rapor_text($grade['description'], rapor_description((float)$grade['score']))); $pdf->Ln(); }
-    for ($i = $count; $i < 4; $i++) { rapor_table_cell($pdf, 18, 8, (string)($i + 1), 'C'); rapor_table_cell($pdf, 62, 8); rapor_table_cell($pdf, 30, 8); rapor_table_cell($pdf, 72, 8); $pdf->Ln(); }
-    $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(18, 166); $pdf->Cell(80, 6, 'GRADE  A : Melampaui Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         B : Sesuai Target', 0, 1); $pdf->SetX(18); $pdf->Cell(80, 6, '         C : Belum sesuai target', 0, 1); $pdf->SetXY(18, 205); $pdf->Cell(80, 6, 'Saran - saran :', 0, 1); for ($i = 1; $i <= 4; $i++) { $pdf->SetX(22); $pdf->Cell(80, 7, $i . '.', 0, 1); } $pdf->SetXY(125, 166); $pdf->Cell(60, 6, 'Diberikan di : Sidoarjo', 0, 1); $pdf->SetX(125); $pdf->Cell(60, 6, 'Tanggal : ' . date('d-m-Y'), 0, 1); $pdf->SetXY(125, 220); $pdf->Cell(60, 6, '(Nama Guru/Ustadz)', 0, 1, 'C');
+    rapor_header($pdf, 'LAPORAN HASIL PEMBELAJARAN BAHASA ARAB');
+    
+    $pdf->SetFont('Helvetica', 'B', 12);
+    $pdf->SetXY(14, 56);
+    $pdf->Cell(187, 6, "MTS ROUDLOTUL QUR'AN", 0, 1, 'C');
+    
+    $pdf->SetFont('Helvetica', 'B', 10);
+    $pdf->SetXY(14, 63);
+    $pdf->Cell(187, 6, 'TAHUN PELAJARAN ' . rapor_text($report['school_year'] ?? '', '2025/2026'), 0, 1, 'C');
+    
+    // Info Siswa (2 kolom)
+    rapor_student_info($pdf, $student, $report, 74, false);
+    
+    // Tabel Penilaian
+    $tableY = 104;
+    $pdf->SetXY(16, $tableY);
+    $pdf->SetFont('Helvetica', 'B', 9);
+    rapor_table_cell($pdf, 16, 9, 'NO', 'C');
+    rapor_table_cell($pdf, 72, 9, 'Elemen', 'C');
+    rapor_table_cell($pdf, 28, 9, 'Nilai', 'C');
+    rapor_table_cell($pdf, 68, 9, 'Keterangan', 'C');
+    $pdf->Ln();
+    
+    $pdf->SetFont('Helvetica', '', 9);
+    $defaultElements = [
+        'Menyimak (Istima\')',
+        'Berbicara (Kalam)',
+        'Membaca (Qira\'ah)',
+        'Menulis (Kitabah)',
+    ];
+
+    for ($i = 0; $i < 4; $i++) {
+        $pdf->SetX(16);
+        $grade = $grades[$i] ?? null;
+        $elem = $grade ? ($grade['element'] ?? $grade['subject'] ?? $defaultElements[$i]) : $defaultElements[$i];
+        
+        $pred = '';
+        if ($grade) {
+            $pred = strtoupper(trim((string)($grade['predikat'] ?? '')));
+            if (!in_array($pred, ['A', 'B', 'C'], true)) {
+                $sc = (float)($grade['score'] ?? 0);
+                $pred = $sc >= 90 ? 'A' : ($sc >= 80 ? 'B' : ($sc > 0 ? 'C' : ''));
+            }
+        }
+        
+        $desc = '';
+        if ($grade) {
+            $desc = trim((string)($grade['description'] ?? ''));
+            if ($desc === '' && $pred !== '') {
+                $desc = match($pred) {
+                    'A' => 'Melampaui Target',
+                    'B' => 'Sesuai Target',
+                    'C' => 'Belum sesuai target',
+                    default => ''
+                };
+            }
+        }
+        
+        rapor_table_cell($pdf, 16, 9, (string)($i + 1), 'C');
+        rapor_table_cell($pdf, 72, 9, '  ' . rapor_text($elem));
+        rapor_table_cell($pdf, 28, 9, $pred, 'C');
+        rapor_table_cell($pdf, 68, 9, '  ' . rapor_text($desc));
+        $pdf->Ln();
+    }
+    
+    // Legenda Grade & Titimangsa
+    $legendY = 152;
+    $pdf->SetFont('Helvetica', 'B', 9);
+    $pdf->SetXY(18, $legendY);
+    $pdf->Cell(80, 5, 'GRADE  A : Melampaui Target', 0, 1);
+    $pdf->SetX(18);
+    $pdf->Cell(80, 5, '         B : Sesuai Target', 0, 1);
+    $pdf->SetX(18);
+    $pdf->Cell(80, 5, '         C : Belum sesuai target', 0, 1);
+    
+    $diberikanDi = rapor_text($notes['diberikan_di'] ?? '', 'Sidoarjo');
+    $tglRaw = $notes['tanggal'] ?? null;
+    $tglStr = $tglRaw ? date('d-m-Y', strtotime((string)$tglRaw)) : date('d-m-Y');
+    
+    $pdf->SetFont('Helvetica', '', 9);
+    $pdf->SetXY(124, $legendY);
+    $pdf->Cell(60, 5, 'Diberikan di : ' . $diberikanDi, 0, 1);
+    $pdf->SetX(124);
+    $pdf->Cell(60, 5, 'Tanggal : ' . $tglStr, 0, 1);
+    
+    // Saran - saran
+    $saranY = 186;
+    $pdf->SetFont('Helvetica', '', 9);
+    $pdf->SetXY(18, $saranY);
+    $pdf->Cell(80, 6, 'Saran - saran :', 0, 1);
+    
+    for ($i = 1; $i <= 4; $i++) {
+        $pdf->SetX(22);
+        $saranText = trim((string)($notes['saran_' . $i] ?? ''));
+        $pdf->Cell(95, 6, $i . '. ' . $saranText, 0, 1);
+    }
+    
+    // Tanda Tangan Guru Pengampu
+    $guruNama = rapor_text($notes['nama_guru'] ?? '', 'Nama Guru/Ustadz');
+    $pdf->SetXY(120, 216);
+    $pdf->Cell(65, 5, '(' . $guruNama . ')', 0, 1, 'C');
 }
 
 function rapor_pengembangan_page(RaporTemplatePDF $pdf, array $student, array $report): void
@@ -383,17 +479,48 @@ function rapor_pengembangan_page(RaporTemplatePDF $pdf, array $student, array $r
     $pdf->SetFont('Helvetica', 'B', 9); $pdf->SetXY(16, 201); $pdf->Cell(180, 7, 'Catatan Wali Kelas :', 1, 1); $pdf->Rect(16, 208, 180, 22); $pdf->SetXY(16, 230); $pdf->Cell(180, 7, 'Catatan Wali Murid :', 1, 1); $pdf->Rect(16, 237, 180, 22); $pdf->SetFont('Helvetica', '', 8); $pdf->SetXY(18, 267); $pdf->Cell(55, 6, 'Orang Tua/Wali siswa', 0, 0, 'C'); $pdf->Cell(60, 6, 'Wali Kelas', 0, 0, 'C'); $pdf->Cell(60, 6, 'Kepala Madrasah', 0, 1, 'C'); $pdf->SetXY(18, 284); $pdf->Cell(55, 6, '(' . rapor_text($student['nama_wali'] ?? $student['nama_ayah'] ?? '', '........................') . ')', 0, 0, 'C'); $pdf->Cell(60, 6, '(Nama Wali Kelas)', 0, 0, 'C'); $pdf->Cell(60, 6, '(Nama Kepala Sekolah)', 0, 1, 'C');
 }
 
-function generate_rapor_pdf(array $student, array $academicGrades, array $tahfidhGrades, array $report, string $dest = 'I', string $filename = 'rapor.pdf'): string
-{
+function generate_rapor_pdf(
+    array $student,
+    array $academicGrades,
+    array $tahfidhGrades,
+    array $report,
+    string $dest = 'I',
+    string $filename = 'rapor.pdf',
+    array $arabicGrades = [],
+    array $arabicNotes = []
+): string {
+    // Jika data arabic belum disediakan, coba query otomatis jika PDO tersedia
+    if (empty($arabicGrades) && !empty($student['id'])) {
+        global $pdo;
+        if (isset($pdo) && $pdo instanceof PDO) {
+            $sem = (int)($report['semester'] ?? 2);
+            $sy = (string)($report['school_year'] ?? '2025/2026');
+            $stArab = $pdo->prepare("SELECT * FROM arabic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY urutan ASC, id ASC");
+            $stArab->execute(['sid' => $student['id'], 'sem' => $sem, 'sy' => $sy]);
+            $arabicGrades = $stArab->fetchAll();
+
+            if (empty($arabicNotes)) {
+                $stNotes = $pdo->prepare("SELECT * FROM arabic_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+                $stNotes->execute(['sid' => $student['id'], 'sem' => $sem, 'sy' => $sy]);
+                $arabicNotes = $stNotes->fetch() ?: [];
+            }
+        }
+    }
+
+    // Fallback bila tetap kosong: ambil dari academicGrades yang bermapel arab
+    if (empty($arabicGrades)) {
+        $arabicGrades = array_values(array_filter($academicGrades, static fn(array $grade): bool => stripos((string)$grade['subject'], 'arab') !== false));
+    }
+
     if (ob_get_level()) ob_end_clean();
     $pdf = new RaporTemplatePDF('P', 'mm', [215, 330]); $pdf->SetMargins(14, 10, 14); $pdf->SetAutoPageBreak(false);
     $pdf->AddPage(); rapor_biodata($pdf, $student);
     $pdf->AddPage(); rapor_academic_page($pdf, $student, $report, $academicGrades, 'LAPORAN HASIL BELAJAR SEMESTER');
     $pdf->AddPage(); rapor_academic_page($pdf, $student, $report, $academicGrades, 'HASIL SUMATIF TENGAH SEMESTER');
-    $arabicGrades = array_values(array_filter($academicGrades, static fn(array $grade): bool => stripos((string)$grade['subject'], 'arab') !== false));
-    $pdf->AddPage(); rapor_arab_page($pdf, $student, $report, $arabicGrades);
+    $pdf->AddPage(); rapor_arab_page($pdf, $student, $report, $arabicGrades, $arabicNotes);
     $pdf->AddPage(); rapor_tahfidh_page($pdf, $student, $report, $tahfidhGrades);
     $pdf->AddPage(); rapor_pengembangan_page($pdf, $student, $report);
     if ($dest === 'I' || $dest === 'D') { if (!headers_sent()) { header('Content-Type: application/pdf'); header('Content-Disposition: ' . ($dest === 'D' ? 'attachment' : 'inline') . '; filename="' . $filename . '"'); header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0'); header('Pragma: no-cache'); header('Expires: 0'); } }
     return $pdf->Output($dest, $filename);
 }
+

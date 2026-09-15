@@ -18,6 +18,9 @@ if ($userRole === 'staff') {
 if ($userRole === 'guru_tahfidh') {
     redirect('/staff/tahfidh/index.php');
 }
+if ($userRole === 'guru_bahasa_arab') {
+    redirect('/staff/bahasa_arab/index.php');
+}
 
 $semester = 2;
 $schoolYear = '2025/2026';
@@ -35,6 +38,7 @@ $totalSiswa = (int)$stmtCount->fetchColumn();
 $sql = "SELECT s.id, s.nis, s.nisn, s.nama, s.kelas,
                (SELECT COUNT(*) FROM academic_grades ag WHERE ag.student_id = s.id AND ag.semester = :sem1 AND ag.school_year = :sy1) AS academic_count,
                (SELECT COUNT(*) FROM tahfidh_grades tg WHERE tg.student_id = s.id AND tg.semester = :sem2 AND tg.school_year = :sy2) AS tahfidh_count,
+               (SELECT COUNT(*) FROM arabic_grades ab WHERE ab.student_id = s.id AND ab.semester = :sem4 AND ab.school_year = :sy4) AS arabic_count,
                r.status AS report_status,
                r.pdf_path
         FROM students s
@@ -45,6 +49,7 @@ $params = [
     'sem1' => $semester, 'sy1' => $schoolYear,
     'sem2' => $semester, 'sy2' => $schoolYear,
     'sem3' => $semester, 'sy3' => $schoolYear,
+    'sem4' => $semester, 'sy4' => $schoolYear,
 ];
 
 if ($userRole === 'wali_kelas' && $waliKelas !== null && $waliKelas !== '') {

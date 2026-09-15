@@ -112,7 +112,8 @@ if ($query !== '') {
 
     <div class="footer">
         <p>Desa Ngampelsari Rt. 03 Ngampelsari, Candi, Sidoarjo, Jawa Timur</p>
-        <p>&copy; <?= date('Y') ?> MTs Tahfidh Roudlotul Qur'an. Hak Cipta Dilindungi.</p>
+         <p>&copy; <?= date('Y') ?> MTs Tahfidh Roudlotul Qur'an. Hak Cipta Dilindungi.</p>
+         <p class="footer-credit">Dibuat oleh Tim IT @Rakha Hadi Yazid &amp; @Andro Lintang Mahaegan.</p>
     </div>
 
 </body>

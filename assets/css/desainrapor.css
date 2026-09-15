@@ -271,6 +271,12 @@ body {
     margin: 4px 0;
 }
 
+.footer-credit {
+    margin-top: 0 !important;
+    white-space: nowrap;
+    font-size: 11px;
+}
+
 @media (max-width: 600px) {
     .header {
         padding: 30px 16px 24px;

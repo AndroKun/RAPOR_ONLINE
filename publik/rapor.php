@@ -42,7 +42,7 @@ if ($query !== '') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Rapor Online - MTs Roudlotul Qur'an</title>
     <!-- Memanggil file CSS eksternal portal publik -->
-    <link rel="stylesheet" href="<?= e(base_url('/assets/css/desainrapor.css')) ?>">
+    <link rel="stylesheet" href="<?= e(base_url('/assets/css/desainrapor.css?v=' . filemtime(__DIR__ . '/../assets/css/desainrapor.css'))) ?>">
 </head>
 <body>
 
@@ -50,8 +50,13 @@ if ($query !== '') {
         <div class="header-nav">
             <a href="<?= e(base_url('/auth/login.php')) ?>">🔒 Area Staf & Guru</a>
         </div>
-        <h1>PORTAL RAPOR ONLINE</h1>
-        <p>MTs Tahfidh Roudlotul Qur'an - Yayasan Az Zuhri</p>
+        <div class="header-brand">
+            <img class="header-logo" src="<?= e(base_url('/resources/Logo_MTS.png')) ?>" alt="Logo MTs Roudlotul Qur'an">
+            <div class="header-copy">
+                <h1>PORTAL RAPOR ONLINE</h1>
+                <p>MTs Tahfidh Roudlotul Qur'an - Yayasan Az Zuhri</p>
+            </div>
+        </div>
     </div>
 
     <div class="container">

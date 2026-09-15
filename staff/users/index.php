@@ -10,6 +10,7 @@ require_role('admin');
 
 $pageTitle = 'Kelola Pengguna - MTs Roudlotul Qur\'an';
 $contentTitle = 'Manajemen Akun Staf & Guru';
+$contentSubtitle = 'Kelola akun, hak akses, penugasan, dan status pengguna internal.';
 $activeMenu = 'users';
 
 $stmt = $pdo->query("SELECT id, username, nama_lengkap, role, mata_pelajaran, kelas_wali, is_active, created_at FROM users ORDER BY role ASC, nama_lengkap ASC");

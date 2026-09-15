@@ -226,6 +226,10 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="quick-access-icon">U</span>
                 <span><strong>Kelola Pengguna</strong><small>Atur akun admin dan guru</small></span>
             </a>
+            <a href="<?= e(base_url('/staff/riwayat/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">R</span>
+                <span><strong>Riwayat Pengisian</strong><small>Lihat aktivitas pengisian nilai</small></span>
+            </a>
         <?php else: ?>
             <a href="<?= e(base_url('/staff/nilai/index.php')) ?>" class="quick-access-item">
                 <span class="quick-access-icon">N</span>

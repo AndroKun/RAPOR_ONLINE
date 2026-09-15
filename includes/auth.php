@@ -148,3 +148,17 @@ function require_bahasa_arab_access(): void
     }
 }
 
+/**
+ * Guard student data management: accessible by Admin and Wali Kelas
+ */
+function require_student_manage_access(): void
+{
+    require_login();
+    $user = current_user();
+    $role = $user['role'] ?? 'staff';
+    if ($role !== 'admin' && $role !== 'wali_kelas') {
+        set_flash('danger', 'Akses ditolak: Fitur kelola dan input data siswa hanya dapat diakses oleh Administrator dan Wali Kelas.');
+        redirect('/staff/dashboard.php');
+    }
+}
+

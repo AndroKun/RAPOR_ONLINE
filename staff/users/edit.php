@@ -51,6 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($username === '') $errors[] = 'Username wajib diisi.';
     if ($nama_lengkap === '') $errors[] = 'Nama Lengkap wajib diisi.';
     if (!in_array($role, ['admin', 'staff', 'guru_tahfidh', 'guru_bahasa_arab', 'wali_kelas'], true)) $errors[] = 'Hak akses / role tidak valid.';
+    if ($role === 'wali_kelas' && $kelas_wali === '') $errors[] = 'Kelas wali wajib dipilih untuk akun Wali Kelas.';
+    if ($role === 'staff' && $mata_pelajaran === '') $errors[] = 'Mata pelajaran wajib dipilih untuk Guru Mata Pelajaran.';
+    if ($password !== '' && strlen($password) < 6) $errors[] = 'Password baru minimal 6 karakter.';
 
     if (empty($errors)) {
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = :u AND id != :id LIMIT 1");
@@ -71,20 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $kelasWaliValue = $role === 'wali_kelas' ? $kelas_wali : null;
 
-        if ($password !== '') {
-            if (strlen($password) < 6) {
-                $errors[] = 'Password baru minimal 6 karakter.';
-            } else {
+        try {
+            if ($password !== '') {
                 $hash = password_hash($password, PASSWORD_DEFAULT);
                 $stmtUpdate = $pdo->prepare("UPDATE users SET username = :u, password_hash = :p, nama_lengkap = :n, role = :r, mata_pelajaran = :m, kelas_wali = :k, is_active = :a WHERE id = :id");
                 $stmtUpdate->execute(['u' => $username, 'p' => $hash, 'n' => $nama_lengkap, 'r' => $role, 'm' => $mapelValue, 'k' => $kelasWaliValue, 'a' => $is_active, 'id' => $id]);
+            } else {
+                $stmtUpdate = $pdo->prepare("UPDATE users SET username = :u, nama_lengkap = :n, role = :r, mata_pelajaran = :m, kelas_wali = :k, is_active = :a WHERE id = :id");
+                $stmtUpdate->execute(['u' => $username, 'n' => $nama_lengkap, 'r' => $role, 'm' => $mapelValue, 'k' => $kelasWaliValue, 'a' => $is_active, 'id' => $id]);
             }
-        } else {
-            $stmtUpdate = $pdo->prepare("UPDATE users SET username = :u, nama_lengkap = :n, role = :r, mata_pelajaran = :m, kelas_wali = :k, is_active = :a WHERE id = :id");
-            $stmtUpdate->execute(['u' => $username, 'n' => $nama_lengkap, 'r' => $role, 'm' => $mapelValue, 'k' => $kelasWaliValue, 'a' => $is_active, 'id' => $id]);
-        }
 
-        if (empty($errors)) {
             // Update session if editing self
             if ($id === (int)($_SESSION['user']['id'] ?? 0)) {
                 $_SESSION['user']['nama_lengkap'] = $nama_lengkap;
@@ -95,6 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             set_flash('success', "Akun pengguna {$nama_lengkap} berhasil diperbarui.");
             redirect('/staff/users/index.php');
+        } catch (Throwable $e) {
+            $errors[] = 'Gagal memperbarui akun pengguna: ' . $e->getMessage();
         }
     }
 }
@@ -156,7 +157,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <div class="field" id="waliKelasGroup" style="margin-bottom: 20px; <?= $role !== 'wali_kelas' ? 'display:none;' : '' ?>">
             <label>Kelas Wali *</label>
-            <select name="kelas_wali" required>
+            <select name="kelas_wali" id="kelasWaliSelect">
                 <option value="">Pilih Kelas</option>
                 <option value="VII" <?= ($kelas_wali ?? '') === 'VII' ? 'selected' : '' ?>>VII</option>
                 <option value="VIII" <?= ($kelas_wali ?? '') === 'VIII' ? 'selected' : '' ?>>VIII</option>
@@ -166,7 +167,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <div class="field" id="mapelGroup" style="margin-bottom: 20px; <?= $role !== 'staff' ? 'display:none;' : '' ?>">
             <label>Mata Pelajaran yang Diajar (Khusus Guru Pelajaran)</label>
-            <select name="mata_pelajaran">
+            <select name="mata_pelajaran" id="mapelSelect">
                 <option value="">— Pilih Mata Pelajaran yang Diampu —</option>
                 <?php foreach ($availableSubjects as $sub): ?>
                     <option value="<?= e($sub) ?>" <?= $mata_pelajaran === $sub ? 'selected' : '' ?>>
@@ -198,13 +199,29 @@ require_once __DIR__ . '/../../includes/header.php';
 function toggleMapelField(role) {
     const mapelGroup = document.getElementById('mapelGroup');
     const waliKelasGroup = document.getElementById('waliKelasGroup');
+    const kelasWaliSelect = document.getElementById('kelasWaliSelect');
+    const mapelSelect = document.getElementById('mapelSelect');
+
     if (mapelGroup) {
-        mapelGroup.style.display = (role === 'staff') ? 'flex' : 'none';
+        mapelGroup.style.display = (role === 'staff') ? 'block' : 'none';
     }
     if (waliKelasGroup) {
-        waliKelasGroup.style.display = (role === 'wali_kelas') ? 'flex' : 'none';
+        waliKelasGroup.style.display = (role === 'wali_kelas') ? 'block' : 'none';
+    }
+    if (kelasWaliSelect) {
+        kelasWaliSelect.disabled = (role !== 'wali_kelas');
+    }
+    if (mapelSelect) {
+        mapelSelect.disabled = (role !== 'staff');
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('roleSelect');
+    if (roleSelect) {
+        toggleMapelField(roleSelect.value);
+    }
+});
 
 function togglePasswordVisibility(inputId, btn) {
     const input = document.getElementById(inputId);

@@ -36,6 +36,9 @@ if (!$student) {
 $stmtRep = $pdo->prepare("SELECT * FROM reports WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
 $stmtRep->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
 $report = $stmtRep->fetch() ?: ['semester' => $semester, 'school_year' => $schoolYear, 'status' => 'draft'];
+if (empty($report['nama_wali_kelas']) && !empty($student['kelas'])) {
+    $report['nama_wali_kelas'] = get_wali_kelas_by_class($pdo, (string)$student['kelas']);
+}
 
 // Ambil nilai akademik
 $stmtAcad = $pdo->prepare("SELECT * FROM academic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY id ASC");
@@ -57,9 +60,14 @@ $stmtNotes = $pdo->prepare("SELECT * FROM arabic_notes WHERE student_id = :sid A
 $stmtNotes->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
 $arabicNotes = $stmtNotes->fetch() ?: [];
 
+// Ambil catatan tanda tangan tahfidh
+$stmtTNotes = $pdo->prepare("SELECT * FROM tahfidh_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+$stmtTNotes->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+$tahfidhNotes = $stmtTNotes->fetch() ?: [];
+
 // Generate PDF
 $sanitizedName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $student['nama']);
 $filename = "Rapor_{$sanitizedName}_Semester_{$semester}.pdf";
 
-generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $report, 'I', $filename, $arabicGrades, $arabicNotes);
+generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $report, 'I', $filename, $arabicGrades, $arabicNotes, $tahfidhNotes);
 exit;

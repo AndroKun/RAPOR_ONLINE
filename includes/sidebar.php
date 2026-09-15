@@ -94,15 +94,15 @@ $isGuruMapel = ($userRole === 'staff');
             </a>
         </li>
 
-        <?php if ($isAdmin): ?>
+        <?php if ($isAdmin || $isWaliKelas): ?>
         <li>
-            <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="<?= in_array($activeMenu, ['siswa', 'inputsiswa']) ? 'active' : '' ?>">
+            <a href="<?= e(base_url('/staff/siswa/index.php')) ?>" class="<?= in_array($activeMenu, ['siswa', 'inputsiswa']) ? 'active' : '' ?>">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="1.6"/>
                     <path d="M4 20c0-3.5 3.5-6 8-6s8 2.5 8 6" stroke="currentColor" stroke-width="1.6"/>
                     <path d="M19 8v4M17 10h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
                 </svg>
-                <span>Input Data Siswa</span>
+                <span>Kelola Data Siswa</span>
             </a>
         </li>
         <?php endif; ?>

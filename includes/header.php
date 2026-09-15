@@ -27,7 +27,7 @@ if (count($nameWords) >= 2) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle) ?></title>
     <!-- Master Design System (Fraunces & Public Sans) -->
-    <link rel="stylesheet" href="<?= e(base_url('/assets/css/desainstaff.css?v=9')) ?>">
+    <link rel="stylesheet" href="<?= e(base_url('/assets/css/desainstaff.css?v=11')) ?>">
 </head>
 <body>
 

@@ -69,6 +69,10 @@ function user_home_route(?array $user = null): string
         return '/staff/tahfidh/index.php';
     }
 
+    if ($role === 'guru_bahasa_arab') {
+        return '/staff/bahasa_arab/index.php';
+    }
+
     if ($role === 'staff') {
         return '/staff/nilai/index.php';
     }
@@ -126,6 +130,20 @@ function require_academic_access(): void
     $role = $user['role'] ?? 'staff';
     if ($role !== 'admin' && $role !== 'staff' && $role !== 'wali_kelas') {
         set_flash('danger', 'Akses ditolak: Menu Nilai Akademik khusus untuk Guru Mata Pelajaran, Wali Kelas atau Administrator.');
+        redirect('/staff/dashboard.php');
+    }
+}
+
+/**
+ * Guard bahasa arab routes: accessible only by Admin, Guru Bahasa Arab or Wali Kelas
+ */
+function require_bahasa_arab_access(): void
+{
+    require_login();
+    $user = current_user();
+    $role = $user['role'] ?? 'staff';
+    if ($role !== 'admin' && $role !== 'guru_bahasa_arab' && $role !== 'wali_kelas') {
+        set_flash('danger', 'Akses ditolak: Menu Nilai Bahasa Arab hanya dapat diakses oleh Guru Bahasa Arab, Wali Kelas atau Administrator.');
         redirect('/staff/dashboard.php');
     }
 }

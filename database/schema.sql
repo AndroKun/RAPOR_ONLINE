@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL,
     `nama_lengkap` VARCHAR(100) NOT NULL,
-    `role` ENUM('admin', 'staff', 'guru_tahfidh', 'wali_kelas') NOT NULL DEFAULT 'staff',
+    `role` ENUM('admin', 'staff', 'guru_tahfidh', 'guru_bahasa_arab', 'wali_kelas') NOT NULL DEFAULT 'staff',
     `mata_pelajaran` VARCHAR(100) NULL,
     `kelas_wali` VARCHAR(30) NULL,
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -105,4 +105,48 @@ CREATE TABLE IF NOT EXISTS `reports` (
     CONSTRAINT `fk_reports_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
     UNIQUE KEY `uq_student_report_period` (`student_id`, `semester`, `school_year`),
     INDEX `idx_reports_search` (`status`, `school_year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7. Tabel Master Elemen Bahasa Arab
+CREATE TABLE IF NOT EXISTS `arabic_categories` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `nama_kategori` VARCHAR(150) NOT NULL UNIQUE,
+    `urutan` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. Tabel Nilai Bahasa Arab (4 Elemen Capaian Pembelajaran)
+CREATE TABLE IF NOT EXISTS `arabic_grades` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
+    `element` VARCHAR(150) NOT NULL,
+    `score` DECIMAL(5,2) NULL,
+    `predikat` ENUM('A', 'B', 'C') NOT NULL DEFAULT 'B',
+    `description` TEXT NULL,
+    `urutan` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `semester` TINYINT UNSIGNED NOT NULL,
+    `school_year` VARCHAR(9) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_arabic_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
+    INDEX `idx_arabic_student_period` (`student_id`, `semester`, `school_year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. Tabel Catatan / Saran Rapor Bahasa Arab
+CREATE TABLE IF NOT EXISTS `arabic_notes` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
+    `semester` TINYINT UNSIGNED NOT NULL,
+    `school_year` VARCHAR(9) NOT NULL,
+    `saran_1` TEXT NULL,
+    `saran_2` TEXT NULL,
+    `saran_3` TEXT NULL,
+    `saran_4` TEXT NULL,
+    `diberikan_di` VARCHAR(100) NOT NULL DEFAULT 'Sidoarjo',
+    `tanggal` DATE NULL,
+    `nama_guru` VARCHAR(150) NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_arabic_notes_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uq_arabic_student_period` (`student_id`, `semester`, `school_year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

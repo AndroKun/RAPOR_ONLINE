@@ -47,9 +47,19 @@ $stmtTahfidh = $pdo->prepare("SELECT * FROM tahfidh_grades WHERE student_id = :s
 $stmtTahfidh->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
 $tahfidhGrades = $stmtTahfidh->fetchAll();
 
+// Ambil nilai bahasa arab
+$stmtArab = $pdo->prepare("SELECT * FROM arabic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY urutan ASC, id ASC");
+$stmtArab->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+$arabicGrades = $stmtArab->fetchAll();
+
+// Ambil catatan saran bahasa arab
+$stmtNotes = $pdo->prepare("SELECT * FROM arabic_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+$stmtNotes->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+$arabicNotes = $stmtNotes->fetch() ?: [];
+
 // Generate PDF
 $sanitizedName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $student['nama']);
 $filename = "Rapor_{$sanitizedName}_Semester_{$semester}.pdf";
 
-generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $report, 'I', $filename);
+generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $report, 'I', $filename, $arabicGrades, $arabicNotes);
 exit;

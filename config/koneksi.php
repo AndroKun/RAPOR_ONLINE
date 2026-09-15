@@ -31,9 +31,75 @@ try {
     }
 
     try {
-        $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin', 'staff', 'guru_tahfidh', 'wali_kelas') NOT NULL DEFAULT 'staff'");
+        $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin', 'staff', 'guru_tahfidh', 'guru_bahasa_arab', 'wali_kelas') NOT NULL DEFAULT 'staff'");
     } catch (Throwable $e) {
         // Ignored if already modified
+    }
+
+    // Ensure Arabic tables exist
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `arabic_categories` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `nama_kategori` VARCHAR(150) NOT NULL UNIQUE,
+                `urutan` INT NOT NULL DEFAULT 0,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $stmtCheckArab = $pdo->query("SELECT COUNT(*) FROM `arabic_categories`");
+        if ((int)$stmtCheckArab->fetchColumn() === 0) {
+            $defaultArabList = [
+                ['Menyimak (Istima\')', 1],
+                ['Berbicara (Kalam)', 2],
+                ['Membaca (Qira\'ah)', 3],
+                ['Menulis (Kitabah)', 4],
+            ];
+            $stmtInsertArab = $pdo->prepare("INSERT IGNORE INTO `arabic_categories` (`nama_kategori`, `urutan`) VALUES (?, ?)");
+            foreach ($defaultArabList as $arItem) {
+                $stmtInsertArab->execute($arItem);
+            }
+        }
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `arabic_grades` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `student_id` INT UNSIGNED NOT NULL,
+                `element` VARCHAR(150) NOT NULL,
+                `score` DECIMAL(5,2) NULL,
+                `predikat` ENUM('A','B','C') NOT NULL DEFAULT 'B',
+                `description` TEXT NULL,
+                `urutan` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+                `semester` TINYINT UNSIGNED NOT NULL,
+                `school_year` VARCHAR(9) NOT NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                KEY `idx_student_period` (`student_id`, `semester`, `school_year`),
+                CONSTRAINT `fk_arabic_grades_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `arabic_notes` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `student_id` INT UNSIGNED NOT NULL,
+                `semester` TINYINT UNSIGNED NOT NULL,
+                `school_year` VARCHAR(9) NOT NULL,
+                `saran_1` TEXT NULL,
+                `saran_2` TEXT NULL,
+                `saran_3` TEXT NULL,
+                `saran_4` TEXT NULL,
+                `diberikan_di` VARCHAR(100) NOT NULL DEFAULT 'Sidoarjo',
+                `tanggal` DATE NULL,
+                `nama_guru` VARCHAR(150) NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY `idx_student_period_note` (`student_id`, `semester`, `school_year`),
+                CONSTRAINT `fk_arabic_notes_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+    } catch (Throwable $e) {
+        // Ignored
     }
 
     // Ensure timestamp columns exist for activity tracking and history log

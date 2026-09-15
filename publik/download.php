@@ -72,8 +72,18 @@ $stmtTah = $pdo->prepare("SELECT * FROM tahfidh_grades WHERE student_id = :sid A
 $stmtTah->execute(['sid' => $data['student_id'], 'sem' => $data['semester'], 'sy' => $data['school_year']]);
 $tahfidhGrades = $stmtTah->fetchAll();
 
+// Ambil nilai bahasa arab
+$stmtArab = $pdo->prepare("SELECT * FROM arabic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY urutan ASC, id ASC");
+$stmtArab->execute(['sid' => $data['student_id'], 'sem' => $data['semester'], 'sy' => $data['school_year']]);
+$arabicGrades = $stmtArab->fetchAll();
+
+// Ambil catatan saran bahasa arab
+$stmtNotes = $pdo->prepare("SELECT * FROM arabic_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+$stmtNotes->execute(['sid' => $data['student_id'], 'sem' => $data['semester'], 'sy' => $data['school_year']]);
+$arabicNotes = $stmtNotes->fetch() ?: [];
+
 $sanitizedName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $data['nama']);
 $filename = "Rapor_{$sanitizedName}_Semester_{$data['semester']}.pdf";
 
-generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $report, 'I', $filename);
+generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $report, 'I', $filename, $arabicGrades, $arabicNotes);
 exit;

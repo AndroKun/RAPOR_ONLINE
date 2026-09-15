@@ -41,6 +41,16 @@ $stmtTahfidh = $pdo->prepare("SELECT * FROM tahfidh_grades WHERE student_id = :s
 $stmtTahfidh->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
 $tahfidhGrades = $stmtTahfidh->fetchAll();
 
+// Ambil nilai bahasa arab
+$stmtArab = $pdo->prepare("SELECT * FROM arabic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY urutan ASC, id ASC");
+$stmtArab->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+$arabicGrades = $stmtArab->fetchAll();
+
+// Ambil catatan saran bahasa arab
+$stmtNotes = $pdo->prepare("SELECT * FROM arabic_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+$stmtNotes->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+$arabicNotes = $stmtNotes->fetch() ?: [];
+
 $pageTitle = 'Pratinjau Rapor - ' . $student['nama'];
 $contentTitle = 'Pratinjau Rapor Elektronik Siswa';
 $activeMenu = 'rapor';
@@ -155,7 +165,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
     <!-- B. NILAI TAHFIDH -->
     <h3 style="color:var(--primary-color); border-bottom:2px solid #e2e8f0; padding-bottom:8px;">B. Capaian Tahfidh Al-Qur'an</h3>
-    <div class="table-responsive">
+    <div class="table-responsive" style="margin-bottom:30px;">
         <table>
             <thead>
                 <tr>
@@ -181,6 +191,55 @@ require_once __DIR__ . '/../../includes/header.php';
             </tbody>
         </table>
     </div>
+
+    <!-- C. NILAI BAHASA ARAB -->
+    <h3 style="color:var(--primary-color); border-bottom:2px solid #e2e8f0; padding-bottom:8px;">C. Capaian Pembelajaran Bahasa Arab</h3>
+    <div class="table-responsive" style="margin-bottom:20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px; text-align:center;">No</th>
+                    <th>Elemen Pembelajaran</th>
+                    <th style="width:120px; text-align:center;">Nilai (GRADE)</th>
+                    <th>Keterangan Capaian</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($arabicGrades)): ?>
+                    <tr><td colspan="4" style="text-align:center; color:#888;">Belum ada penilaian Bahasa Arab yang diinput.</td></tr>
+                <?php else: ?>
+                    <?php $no = 1; foreach ($arabicGrades as $ag): ?>
+                        <tr>
+                            <td style="text-align:center; font-weight:bold;"><?= $no++ ?></td>
+                            <td><strong><?= e($ag['element']) ?></strong></td>
+                            <td style="text-align:center; font-weight:bold; font-size:15px; color:#166534;">
+                                <?= e($ag['predikat']) ?>
+                            </td>
+                            <td><?= e($ag['description']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <?php if (!empty($arabicNotes)): ?>
+        <div style="background:#f8fafc; padding:18px 20px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:20px; font-size:13.5px;">
+            <div style="font-weight:700; color:var(--primary-color); margin-bottom:8px;">Saran - Saran Evaluasi Guru Bahasa Arab:</div>
+            <ol style="margin:0 0 14px 0; padding-left:22px; line-height:1.6;">
+                <?php for ($i = 1; $i <= 4; $i++): ?>
+                    <?php if (!empty($arabicNotes['saran_' . $i])): ?>
+                        <li><?= e($arabicNotes['saran_' . $i]) ?></li>
+                    <?php endif; ?>
+                <?php endfor; ?>
+            </ol>
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; color:#555; border-top:1px dashed #cbd5e1; padding-top:10px; font-size:13px;">
+                <div>Diberikan di: <strong><?= e($arabicNotes['diberikan_di'] ?: 'Sidoarjo') ?></strong>, Tanggal: <strong><?= !empty($arabicNotes['tanggal']) ? date('d-m-Y', strtotime((string)$arabicNotes['tanggal'])) : date('d-m-Y') ?></strong></div>
+                <div>Guru Pengampu: <strong><?= e($arabicNotes['nama_guru'] ?: 'Ustadz Pengampu') ?></strong></div>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
+
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

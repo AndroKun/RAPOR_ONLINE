@@ -23,7 +23,7 @@ $semester = 2;
 $schoolYear = '2025/2026';
 
 $pageTitle = 'Dashboard Staf - MTs Roudlotul Qur\'an';
-$contentTitle = 'Database Rapor Genap 2025/2026';
+$contentTitle = 'Database Rapor Genap 2026/2027';
 $contentSubtitle = 'Ringkasan data dan status kelengkapan nilai siswa.';
 $activeMenu = 'dashboard';
 

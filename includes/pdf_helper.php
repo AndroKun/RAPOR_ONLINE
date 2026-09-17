@@ -191,7 +191,7 @@ function rapor_stored_grade(array $grade): string
 function rapor_header(RaporTemplatePDF $pdf, string $title, bool $formal = false): void
 {
     $pdf->SetDrawColor(0, 0, 0);
-    $pdf->SetLineWidth(0.45);
+    $pdf->SetLineWidth(0.25);
     $pdf->Image(__DIR__ . '/../resources/Logo_MTS.png', 18, 10, 30);
     $pdf->SetFont('Helvetica', 'B', 13);
     $pdf->SetXY(14, 12);
@@ -281,7 +281,7 @@ function rapor_academic_page(RaporTemplatePDF $pdf, array $student, array $repor
 
     if ($title === 'LAPORAN HASIL BELAJAR SEMESTER') {
         $tableX = 6;
-        $tableY = 80;
+        $tableY = 88;
         $noWidth = 9;
         $subjectWidth = 62;
         $scoreWidth = 20;
@@ -292,21 +292,28 @@ function rapor_academic_page(RaporTemplatePDF $pdf, array $student, array $repor
         $summaryLabelWidth = $noWidth + $subjectWidth;
         $summaryValueWidth = $scoreWidth + $gradeWidth;
 
-        $pdf->Rect(4, 78, 207, 244);
-        $pdf->SetXY($tableX, $tableY);
+        $pdf->Rect(4, 86, 207, 230);
+        $headerX = $tableX;
+        $headerY = $tableY;
+        $pdf->SetXY($headerX, $headerY);
         $pdf->Cell($noWidth, $headerRowHeight * 3, 'No', 1, 0, 'C', true);
+        $pdf->SetXY($headerX + $noWidth, $headerY);
         $pdf->Cell($subjectWidth, $headerRowHeight * 3, 'Mata Pelajaran', 1, 0, 'C', true);
-        $pdf->Cell($scoreWidth + $gradeWidth + $noteWidth, $headerRowHeight, 'Hasil Belajar', 1, 1, 'C', true);
-        $pdf->SetX($tableX + $summaryLabelWidth);
+        $pdf->SetXY($headerX + $summaryLabelWidth, $headerY);
+        $pdf->Cell($scoreWidth + $gradeWidth + $noteWidth, $headerRowHeight, 'Hasil Belajar', 1, 0, 'C', true);
+        $pdf->SetXY($headerX + $summaryLabelWidth, $headerY + $headerRowHeight);
         $pdf->Cell($scoreWidth + $gradeWidth, $headerRowHeight, 'Nilai', 1, 0, 'C', true);
-        $pdf->Cell($noteWidth, $headerRowHeight * 2, 'Keterangan', 1, 1, 'C', true);
-        $pdf->SetX($tableX + $summaryLabelWidth);
+        $pdf->SetXY($headerX + $summaryLabelWidth + $scoreWidth + $gradeWidth, $headerY + $headerRowHeight);
+        $pdf->Cell($noteWidth, $headerRowHeight * 2, 'Keterangan', 1, 0, 'C', true);
+        $pdf->SetXY($headerX + $summaryLabelWidth, $headerY + ($headerRowHeight * 2));
         $pdf->Cell($scoreWidth, $headerRowHeight, 'Angka', 1, 0, 'C', true);
-        $pdf->Cell($gradeWidth, $headerRowHeight, 'Huruf', 1, 1, 'C', true);
+        $pdf->Cell($gradeWidth, $headerRowHeight, 'Huruf', 1, 0, 'C', true);
+        $pdf->SetXY($tableX, $tableY + ($headerRowHeight * 3));
 
         $pdf->SetFont('Helvetica', '', 8);
         foreach ($grades as $i => $grade) {
             if ($i >= 18) break;
+            $pdf->SetX($tableX);
             $score = (float)$grade['score'];
             $sum += $score;
             rapor_table_cell($pdf, $noWidth, $dataRowHeight, (string)($i + 1), 'C');
@@ -317,6 +324,7 @@ function rapor_academic_page(RaporTemplatePDF $pdf, array $student, array $repor
             $pdf->Ln();
         }
         for ($i = $count; $i < 18; $i++) {
+            $pdf->SetX($tableX);
             rapor_table_cell($pdf, $noWidth, $dataRowHeight, (string)($i + 1), 'C');
             rapor_table_cell($pdf, $subjectWidth, $dataRowHeight);
             rapor_table_cell($pdf, $scoreWidth, $dataRowHeight);

@@ -221,6 +221,32 @@ function rapor_grade(float $score): string
     return 'D';
 }
 
+function rapor_number_words(int $number): string
+{
+    $words = [
+        'Nol', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh', 'Delapan', 'Sembilan',
+    ];
+
+    if ($number < 0) return 'Minus ' . rapor_number_words(abs($number));
+    if ($number < 10) return $words[$number];
+    if ($number < 20) {
+        return $number === 10 ? 'Sepuluh' : ($number === 11 ? 'Sebelas' : $words[$number - 10] . ' Belas');
+    }
+    if ($number < 100) {
+        return $words[intdiv($number, 10)] . ' Puluh' . ($number % 10 ? ' ' . rapor_number_words($number % 10) : '');
+    }
+    if ($number < 200) return 'Seratus' . ($number > 100 ? ' ' . rapor_number_words($number - 100) : '');
+    if ($number < 1000) {
+        return $words[intdiv($number, 100)] . ' Ratus' . ($number % 100 ? ' ' . rapor_number_words($number % 100) : '');
+    }
+    if ($number < 2000) return 'Seribu' . ($number > 1000 ? ' ' . rapor_number_words($number - 1000) : '');
+    if ($number < 1000000) {
+        return rapor_number_words(intdiv($number, 1000)) . ' Ribu' . ($number % 1000 ? ' ' . rapor_number_words($number % 1000) : '');
+    }
+
+    return (string)$number;
+}
+
 function rapor_description(float $score): string
 {
     if ($score >= 91) return 'Sangat Baik';
@@ -372,7 +398,7 @@ function rapor_academic_page(RaporTemplatePDF $pdf, array $student, array $repor
             rapor_table_cell($pdf, $noWidth, $dataRowHeight, (string)($i + 1), 'C');
             rapor_table_cell($pdf, $subjectWidth, $dataRowHeight, rapor_text($grade['subject']));
             rapor_table_cell($pdf, $scoreWidth, $dataRowHeight, number_format($score, 0), 'C');
-            rapor_table_cell($pdf, $gradeWidth, $dataRowHeight, rapor_stored_grade($grade), 'C');
+            rapor_table_cell($pdf, $gradeWidth, $dataRowHeight, rapor_number_words((int)round($score)), 'C');
             rapor_table_cell($pdf, $noteWidth, $dataRowHeight, rapor_text($grade['description'] ?? '', rapor_description($score)));
             $pdf->Ln();
         }

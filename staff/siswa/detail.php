@@ -83,6 +83,9 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div><strong>Pekerjaan Wali:</strong> <?= e($student['pekerjaan_wali'] ?? '-') ?></div>
                     <div class="full-width"><strong>Alamat Wali:</strong> <?= e($student['alamat_wali'] ?? '-') ?></div>
                 <?php endif; ?>
+                <div class="full-width" style="border-top: 1px dashed #e2e8f0; padding-top: 10px; margin-top: 6px;">
+                    <strong>Kepala Madrasah (Tanda Tangan Lembar Data Diri):</strong> <?= e($student['nama_kepala_madrasah'] ?: '(Default Sistem)') ?>
+                </div>
             </div>
         </div>
     </div>

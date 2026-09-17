@@ -6,15 +6,20 @@ require_once __DIR__ . '/../config/koneksi.php';
 require_once __DIR__ . '/../includes/fungsi.php';
 require_once __DIR__ . '/../includes/auth.php';
 
-require_role('admin');
+require_student_manage_access();
+
+$userWaliKelas = current_user_wali_kelas_class();
 
 $pageTitle = 'Input Data Siswa - MTs Roudlotul Qur\'an';
 $contentTitle = 'Formulir Data Diri Siswa';
 $contentSubtitle = 'Lengkapi data pribadi, riwayat sekolah, dan data keluarga siswa secara bertahap.';
-$activeMenu = 'inputsiswa';
+$activeMenu = 'siswa';
 
 $errors = [];
 $old = [];
+if ($userWaliKelas !== null) {
+    $old['kelas'] = $userWaliKelas;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -48,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $namaWali = trim($_POST['nama_wali'] ?? '');
     $alamatWali = trim($_POST['alamat_wali'] ?? '');
     $pekerjaanWali = trim($_POST['pekerjaan_wali'] ?? '');
+    $namaKepalaMadrasah = trim($_POST['nama_kepala_madrasah'] ?? '');
 
     // Validasi Dasar
     if ($nama === '') $errors[] = 'Nama lengkap siswa wajib diisi.';
@@ -77,11 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO students (
                     nis, nisn, nama, jenis_kelamin, tempat_lahir, tanggal_lahir, 
                     agama, anak_ke, status_keluarga, alamat, kelas, 
-                    tanggal_diterima, sekolah_asal, alamat_sekolah_asal
+                    tanggal_diterima, sekolah_asal, alamat_sekolah_asal, nama_kepala_madrasah
                 ) VALUES (
                     :nis, :nisn, :nama, :jenis_kelamin, :tempat_lahir, :tanggal_lahir, 
                     :agama, :anak_ke, :status_keluarga, :alamat, :kelas, 
-                    :tanggal_diterima, :sekolah_asal, :alamat_sekolah_asal
+                    :tanggal_diterima, :sekolah_asal, :alamat_sekolah_asal, :nama_kepala_madrasah
                 )
             ");
 
@@ -100,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'tanggal_diterima' => $tanggalDiterima,
                 'sekolah_asal' => $sekolahAsal ?: null,
                 'alamat_sekolah_asal' => $alamatSekolahAsal ?: null,
+                'nama_kepala_madrasah' => $namaKepalaMadrasah ?: null,
             ]);
 
             $studentId = (int)$pdo->lastInsertId();
@@ -130,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
 
             set_flash('success', "Data siswa {$nama} berhasil ditambahkan ke database.");
-            redirect('/staff/dashboard.php');
+            redirect('/staff/siswa/index.php');
         } catch (Exception $e) {
             $pdo->rollBack();
             $errors[] = 'Gagal menyimpan data: ' . $e->getMessage();
@@ -140,6 +147,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+    <div>
+        <p style="margin:0; color:var(--ink-soft); font-size:14px;">Masukkan data siswa baru secara lengkap untuk pembuatan profil dan rapor.</p>
+    </div>
+    <div>
+        <a href="<?= e(base_url('/staff/siswa/index.php')) ?>" class="btn btn-secondary">
+            📋 Lihat Daftar Siswa
+        </a>
+    </div>
+</div>
 
 <?php if (!empty($errors)): ?>
     <div class="alert alert-danger">
@@ -311,6 +329,14 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="field">
                 <label>17. Pekerjaan Wali</label>
                 <input type="text" name="pekerjaan_wali" value="<?= e($old['pekerjaan_wali'] ?? '') ?>" placeholder="Pekerjaan wali">
+            </div>
+            <hr class="divider">
+            <div class="field full">
+                <label>18. Nama Kepala Madrasah (Penandatangan Lembar Data Diri Siswa)</label>
+                <input type="text" name="nama_kepala_madrasah" value="<?= e($old['nama_kepala_madrasah'] ?? '') ?>" placeholder="Contoh: H. Achmad Fathoni, S.Ag, M.Pd.I">
+                <span class="hint" style="font-size:12.5px; color:var(--ink-soft); margin-top:4px; display:block;">
+                    Nama ini akan tercantum pada bagian tanda tangan di bawah lembar <strong>DATA DIRI SISWA</strong>.
+                </span>
             </div>
         </div>
     </section>

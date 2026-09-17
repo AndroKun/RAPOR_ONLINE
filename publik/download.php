@@ -27,7 +27,9 @@ if ($reportId) {
 } elseif ($studentId) {
     $stmt = $pdo->prepare("SELECT s.*, s.id AS student_id, g.nama_ayah, g.nama_ibu, g.alamat_orang_tua, g.pekerjaan_ayah, g.pekerjaan_ibu,
                                   g.nama_wali, g.alamat_wali, g.pekerjaan_wali,
-                                  r.id AS report_id, r.status, r.published_at 
+                                  r.id AS report_id, r.status, r.published_at,
+                                  r.nama_wali_kelas, r.nama_kepala_madrasah, r.catatan_wali_kelas, r.catatan_wali_murid,
+                                  r.tempat_rapor, r.tanggal_rapor
                            FROM students s
                            LEFT JOIN guardians g ON g.student_id = s.id
                            LEFT JOIN reports r ON r.student_id = s.id AND r.semester = :sem AND r.school_year = :sy
@@ -54,12 +56,18 @@ if (!$data) {
     exit;
 }
 
-    $student = $data;
+$student = $data;
 
 $report = [
     'semester' => (int)$data['semester'],
     'school_year' => $data['school_year'],
     'status' => 'published',
+    'nama_wali_kelas' => !empty($data['nama_wali_kelas']) ? $data['nama_wali_kelas'] : get_wali_kelas_by_class($pdo, (string)($student['kelas'] ?? '')),
+    'nama_kepala_madrasah' => $data['nama_kepala_madrasah'] ?? null,
+    'catatan_wali_kelas' => $data['catatan_wali_kelas'] ?? null,
+    'catatan_wali_murid' => $data['catatan_wali_murid'] ?? null,
+    'tempat_rapor' => $data['tempat_rapor'] ?? 'Sidoarjo',
+    'tanggal_rapor' => $data['tanggal_rapor'] ?? null,
 ];
 
 // Ambil nilai akademik
@@ -71,6 +79,11 @@ $academicGrades = $stmtAcad->fetchAll();
 $stmtTah = $pdo->prepare("SELECT * FROM tahfidh_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY id ASC");
 $stmtTah->execute(['sid' => $data['student_id'], 'sem' => $data['semester'], 'sy' => $data['school_year']]);
 $tahfidhGrades = $stmtTah->fetchAll();
+
+// Ambil catatan tahfidh
+$stmtTNotes = $pdo->prepare("SELECT * FROM tahfidh_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+$stmtTNotes->execute(['sid' => $data['student_id'], 'sem' => $data['semester'], 'sy' => $data['school_year']]);
+$tahfidhNotes = $stmtTNotes->fetch() ?: [];
 
 // Ambil nilai bahasa arab
 $stmtArab = $pdo->prepare("SELECT * FROM arabic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy ORDER BY urutan ASC, id ASC");
@@ -85,5 +98,5 @@ $arabicNotes = $stmtNotes->fetch() ?: [];
 $sanitizedName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $data['nama']);
 $filename = "Rapor_{$sanitizedName}_Semester_{$data['semester']}.pdf";
 
-generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $report, 'I', $filename, $arabicGrades, $arabicNotes);
+generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $report, 'I', $filename, $arabicGrades, $arabicNotes, $tahfidhNotes);
 exit;

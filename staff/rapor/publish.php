@@ -50,13 +50,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtNotes->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
                 $arabicNotes = $stmtNotes->fetch() ?: [];
 
+                // Ambil catatan tahfidh
+                $stmtTNotes = $pdo->prepare("SELECT * FROM tahfidh_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+                $stmtTNotes->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+                $tahfidhNotes = $stmtTNotes->fetch() ?: [];
+
+                // Ambil data laporan existing agar tanda tangan dan catatan tersimpan tetap utuh
+                $stmtRep = $pdo->prepare("SELECT * FROM reports WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+                $stmtRep->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+                $tempReport = $stmtRep->fetch() ?: [];
+                $tempReport['semester'] = $semester;
+                $tempReport['school_year'] = $schoolYear;
+                $tempReport['status'] = 'published';
+                if (empty($tempReport['nama_wali_kelas']) && !empty($student['kelas'])) {
+                    $tempReport['nama_wali_kelas'] = get_wali_kelas_by_class($pdo, (string)$student['kelas']);
+                }
+
                 // Simpan PDF fisik dengan hash unik
                 $uniqueHash = hash('sha256', "student_{$studentId}_sem_{$semester}_sy_{$schoolYear}");
                 $pdfFileName = "rapor_{$studentId}_{$semester}_{$uniqueHash}.pdf";
                 $pdfFullPath = $uploadDir . '/' . $pdfFileName;
 
-                $tempReport = ['semester' => $semester, 'school_year' => $schoolYear, 'status' => 'published'];
-                generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $tempReport, 'F', $pdfFullPath, $arabicGrades, $arabicNotes);
+                generate_rapor_pdf($student, $academicGrades, $tahfidhGrades, $tempReport, 'F', $pdfFullPath, $arabicGrades, $arabicNotes, $tahfidhNotes);
 
                 // Update database
                 $stmtUp = $pdo->prepare("INSERT INTO reports (student_id, semester, school_year, status, pdf_path, published_at) 

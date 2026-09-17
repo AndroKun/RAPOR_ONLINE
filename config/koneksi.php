@@ -98,6 +98,30 @@ try {
                 CONSTRAINT `fk_arabic_notes_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
+
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tahfidh_notes` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `student_id` INT UNSIGNED NOT NULL,
+                `semester` TINYINT UNSIGNED NOT NULL,
+                `school_year` VARCHAR(9) NOT NULL,
+                `diberikan_di` VARCHAR(100) NOT NULL DEFAULT 'Sidoarjo',
+                `tanggal` DATE NULL,
+                `nama_guru` VARCHAR(150) NULL,
+                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY `idx_student_period_tahfidh` (`student_id`, `semester`, `school_year`),
+                CONSTRAINT `fk_tahfidh_notes_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+
+        $pdo->exec("ALTER TABLE `students` ADD COLUMN IF NOT EXISTS `nama_kepala_madrasah` VARCHAR(150) NULL");
+        $pdo->exec("ALTER TABLE `reports` ADD COLUMN IF NOT EXISTS `nama_wali_kelas` VARCHAR(150) NULL");
+        $pdo->exec("ALTER TABLE `reports` ADD COLUMN IF NOT EXISTS `nama_kepala_madrasah` VARCHAR(150) NULL");
+        $pdo->exec("ALTER TABLE `reports` ADD COLUMN IF NOT EXISTS `catatan_wali_kelas` TEXT NULL");
+        $pdo->exec("ALTER TABLE `reports` ADD COLUMN IF NOT EXISTS `catatan_wali_murid` TEXT NULL");
+        $pdo->exec("ALTER TABLE `reports` ADD COLUMN IF NOT EXISTS `tempat_rapor` VARCHAR(100) NOT NULL DEFAULT 'Sidoarjo'");
+        $pdo->exec("ALTER TABLE `reports` ADD COLUMN IF NOT EXISTS `tanggal_rapor` DATE NULL");
     } catch (Throwable $e) {
         // Ignored
     }

@@ -34,6 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($nama_lengkap === '') $errors[] = 'Nama Lengkap wajib diisi.';
     if (strlen($password) < 6) $errors[] = 'Password minimal 6 karakter.';
     if (!in_array($role, ['admin', 'staff', 'guru_tahfidh', 'guru_bahasa_arab', 'wali_kelas'], true)) $errors[] = 'Hak akses / role tidak valid.';
+    if ($role === 'wali_kelas' && $kelas_wali === '') $errors[] = 'Kelas wali wajib dipilih untuk akun Wali Kelas.';
+    if ($role === 'staff' && $mata_pelajaran === '') $errors[] = 'Mata pelajaran wajib dipilih untuk Guru Mata Pelajaran.';
 
     if (empty($errors)) {
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = :u LIMIT 1");
@@ -55,18 +57,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $kelasWaliValue = $role === 'wali_kelas' ? $kelas_wali : null;
-        $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, nama_lengkap, role, mata_pelajaran, kelas_wali, is_active) VALUES (:u, :p, :n, :r, :m, :k, 1)");
-        $stmt->execute([
-            'u' => $username,
-            'p' => $hash,
-            'n' => $nama_lengkap,
-            'r' => $role,
-            'm' => $mapelToSave,
-            'k' => $kelasWaliValue,
-        ]);
 
-        set_flash('success', "Akun pengguna {$nama_lengkap} ({$username}) berhasil dibuat dan langsung aktif.");
-        redirect('/staff/users/index.php');
+        try {
+            $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, nama_lengkap, role, mata_pelajaran, kelas_wali, is_active) VALUES (:u, :p, :n, :r, :m, :k, 1)");
+            $stmt->execute([
+                'u' => $username,
+                'p' => $hash,
+                'n' => $nama_lengkap,
+                'r' => $role,
+                'm' => $mapelToSave,
+                'k' => $kelasWaliValue,
+            ]);
+
+            set_flash('success', "Akun pengguna {$nama_lengkap} ({$username}) berhasil dibuat dan langsung aktif.");
+            redirect('/staff/users/index.php');
+        } catch (Throwable $e) {
+            $errors[] = 'Gagal menyimpan akun pengguna: ' . $e->getMessage();
+        }
     }
 }
 
@@ -127,17 +134,17 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <div class="field" id="waliKelasGroup" style="margin-bottom: 20px; <?= $role !== 'wali_kelas' ? 'display:none;' : '' ?>">
             <label>Kelas Wali *</label>
-            <select name="kelas_wali" required>
+            <select name="kelas_wali" id="kelasWaliSelect">
                 <option value="">Pilih Kelas</option>
-                <option value="VII">VII</option>
-                <option value="VIII">VIII</option>
-                <option value="IX">IX</option>
+                <option value="VII" <?= $kelas_wali === 'VII' ? 'selected' : '' ?>>VII</option>
+                <option value="VIII" <?= $kelas_wali === 'VIII' ? 'selected' : '' ?>>VIII</option>
+                <option value="IX" <?= $kelas_wali === 'IX' ? 'selected' : '' ?>>IX</option>
             </select>
         </div>
 
         <div class="field" id="mapelGroup" style="margin-bottom: 25px; <?= $role !== 'staff' ? 'display:none;' : '' ?>">
             <label>Mata Pelajaran yang Diajar (Khusus Guru Pelajaran) *</label>
-            <select name="mata_pelajaran">
+            <select name="mata_pelajaran" id="mapelSelect">
                 <option value="">— Pilih Mata Pelajaran yang Diampu —</option>
                 <?php foreach ($availableSubjects as $sub): ?>
                     <option value="<?= e($sub) ?>" <?= $mata_pelajaran === $sub ? 'selected' : '' ?>>
@@ -161,13 +168,29 @@ require_once __DIR__ . '/../../includes/header.php';
 function toggleMapelField(role) {
     const mapelGroup = document.getElementById('mapelGroup');
     const waliKelasGroup = document.getElementById('waliKelasGroup');
+    const kelasWaliSelect = document.getElementById('kelasWaliSelect');
+    const mapelSelect = document.getElementById('mapelSelect');
+
     if (mapelGroup) {
-        mapelGroup.style.display = (role === 'staff') ? 'flex' : 'none';
+        mapelGroup.style.display = (role === 'staff') ? 'block' : 'none';
     }
     if (waliKelasGroup) {
-        waliKelasGroup.style.display = (role === 'wali_kelas') ? 'flex' : 'none';
+        waliKelasGroup.style.display = (role === 'wali_kelas') ? 'block' : 'none';
+    }
+    if (kelasWaliSelect) {
+        kelasWaliSelect.disabled = (role !== 'wali_kelas');
+    }
+    if (mapelSelect) {
+        mapelSelect.disabled = (role !== 'staff');
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('roleSelect');
+    if (roleSelect) {
+        toggleMapelField(roleSelect.value);
+    }
+});
 
 function togglePasswordVisibility(inputId, btn) {
     const input = document.getElementById(inputId);

@@ -62,6 +62,17 @@ $stmtTahfidh = $pdo->prepare("SELECT memorization, score, predikat, description 
 $stmtTahfidh->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
 $savedTahfidh = $stmtTahfidh->fetchAll();
 
+// Ambil catatan / tanda tangan tahfidh yang tersimpan
+$stmtTNote = $pdo->prepare("SELECT * FROM tahfidh_notes WHERE student_id = :sid AND semester = :sem AND school_year = :sy LIMIT 1");
+$stmtTNote->execute(['sid' => $studentId, 'sem' => $semester, 'sy' => $schoolYear]);
+$savedTahfidhNote = $stmtTNote->fetch() ?: [];
+
+$currentUser = current_user();
+$defaultGuruTahfidh = $currentUser['nama_lengkap'] ?? '';
+$namaGuruTahfidh = $savedTahfidhNote['nama_guru'] ?? $defaultGuruTahfidh;
+$diberikanDi = $savedTahfidhNote['diberikan_di'] ?? 'Sidoarjo';
+$tanggalTahfidh = $savedTahfidhNote['tanggal'] ?? date('Y-m-d');
+
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -70,6 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $memorizations = $_POST['memorizations'] ?? [];
     $predikats = $_POST['predikats'] ?? [];
     $descriptions = $_POST['descriptions'] ?? [];
+    $namaGuruTahfidh = trim($_POST['nama_guru'] ?? '');
+    $diberikanDi = trim($_POST['diberikan_di'] ?? 'Sidoarjo');
+    $tanggalTahfidh = trim($_POST['tanggal'] ?? date('Y-m-d'));
 
     try {
         $pdo->beginTransaction();
@@ -105,6 +119,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $insertedCount++;
             }
         }
+
+        // Simpan / update data tanda tangan tahfidh
+        $stmtTN = $pdo->prepare("INSERT INTO tahfidh_notes (student_id, semester, school_year, nama_guru, diberikan_di, tanggal, updated_at)
+            VALUES (:sid, :sem, :sy, :nama_guru, :diberikan_di, :tanggal, NOW())
+            ON DUPLICATE KEY UPDATE 
+            nama_guru = VALUES(nama_guru),
+            diberikan_di = VALUES(diberikan_di),
+            tanggal = VALUES(tanggal),
+            updated_at = NOW()");
+        $stmtTN->execute([
+            'sid' => $studentId,
+            'sem' => $semester,
+            'sy' => $schoolYear,
+            'nama_guru' => $namaGuruTahfidh ?: null,
+            'diberikan_di' => $diberikanDi ?: 'Sidoarjo',
+            'tanggal' => $tanggalTahfidh ?: date('Y-m-d'),
+        ]);
 
         // Cek kelengkapan untuk status rapor
         $stmtAcademic = $pdo->prepare("SELECT COUNT(*) FROM academic_grades WHERE student_id = :sid AND semester = :sem AND school_year = :sy");
@@ -237,6 +268,31 @@ require_once __DIR__ . '/../../includes/header.php';
                 <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+
+    <!-- Card Tanda Tangan Tahfidh -->
+    <div class="card" style="margin-top: 24px; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: #ffffff;">
+        <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 16px; font-weight: 700; color: var(--green-900); display: flex; align-items: center; gap: 8px;">
+            ✍️ Tanda Tangan Laporan Hasil Kegiatan Tahfidh
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+            <div class="form-group">
+                <label style="font-weight: 600; font-size: 13.5px; color: var(--ink); display: block; margin-bottom: 6px;">Nama Guru / Pengampu Tahfidh</label>
+                <input type="text" name="nama_guru" value="<?= e($namaGuruTahfidh) ?>" placeholder="Contoh: Ust. Ahmad Fauzi, S.Pd.I" required
+                       style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+                <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">Nama yang dicetak pada tanda tangan Guru Al-Qur'an.</small>
+            </div>
+            <div class="form-group">
+                <label style="font-weight: 600; font-size: 13.5px; color: var(--ink); display: block; margin-bottom: 6px;">Diberikan di (Kota/Tempat)</label>
+                <input type="text" name="diberikan_di" value="<?= e($diberikanDi) ?>" placeholder="Sidoarjo" required
+                       style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+            </div>
+            <div class="form-group">
+                <label style="font-weight: 600; font-size: 13.5px; color: var(--ink); display: block; margin-bottom: 6px;">Tanggal Penandatanganan</label>
+                <input type="date" name="tanggal" value="<?= e($tanggalTahfidh) ?>" required
+                       style="width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit;">
+            </div>
+        </div>
     </div>
 
     <div class="form-actions" style="margin-top: 24px;">

@@ -169,4 +169,92 @@ function get_all_tahfidh_categories(PDO $pdo): array
     ];
 }
 
+/**
+ * Parse komponen tingkat kelas dan rombel / peminatan
+ * Contoh: 'VII A' -> ['7', 'A', 'VII A'], '8' -> ['8', null, '8']
+ */
+function parse_class_components(string $str): array
+{
+    $str = strtoupper(trim($str));
+    $str = preg_replace('/^KELAS\s+/i', '', $str);
+
+    $romanMap = [
+        'XII' => '12',
+        'XI' => '11',
+        'IX' => '9',
+        'X' => '10',
+        'VIII' => '8',
+        'VII' => '7',
+        'VI' => '6',
+        'IV' => '4',
+        'V' => '5',
+        'III' => '3',
+        'II' => '2',
+        'I' => '1',
+    ];
+
+    $level = null;
+    $section = null;
+
+    if (preg_match('/^(XII|XI|IX|X|VIII|VII|VI|IV|V|III|II|I)(?:[\s\-_]*([A-Z0-9]+))?$/i', $str, $m)) {
+        $level = $romanMap[strtoupper($m[1])] ?? null;
+        $section = !empty($m[2]) ? strtoupper($m[2]) : null;
+    } elseif (preg_match('/^(\d+)(?:[\s\-_]*([A-Z]+))?$/i', $str, $m)) {
+        $level = $m[1];
+        $section = !empty($m[2]) ? strtoupper($m[2]) : null;
+    }
+
+    return [$level, $section, $str];
+}
+
+/**
+ * Ambil nama wali kelas otomatis berdasarkan kelas murid
+ */
+function get_wali_kelas_by_class(PDO $pdo, string $kelas): string
+{
+    $k = strtoupper(trim($kelas));
+    if ($k === '') {
+        return 'Wali Kelas';
+    }
+
+    // 1. Exact match (case-insensitive)
+    try {
+        $stmt = $pdo->prepare("SELECT nama_lengkap FROM users WHERE role = 'wali_kelas' AND is_active = 1 AND UPPER(TRIM(kelas_wali)) = :k LIMIT 1");
+        $stmt->execute(['k' => $k]);
+        $nama = $stmt->fetchColumn();
+        if ($nama) {
+            return (string)$nama;
+        }
+
+        // 2. Component matching (Romawi <-> Angka, dengan atau tanpa rombel A/B/C)
+        [$studentLevel, $studentSection] = parse_class_components($k);
+
+        $stmtAll = $pdo->query("SELECT id, nama_lengkap, kelas_wali FROM users WHERE role = 'wali_kelas' AND is_active = 1");
+        $allWali = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($studentLevel !== null && !empty($allWali)) {
+            // Cocokkan tingkat + rombel secara presisi (misal VII A dengan 7-A)
+            foreach ($allWali as $w) {
+                [$wLevel, $wSection] = parse_class_components((string)($w['kelas_wali'] ?? ''));
+                if ($wLevel === $studentLevel && $wSection !== null && $wSection === $studentSection) {
+                    return (string)$w['nama_lengkap'];
+                }
+            }
+
+            // Cocokkan tingkat saja jika wali kelas mengampu seluruh jenjang tingkat tersebut
+            foreach ($allWali as $w) {
+                [$wLevel, $wSection] = parse_class_components((string)($w['kelas_wali'] ?? ''));
+                if ($wLevel === $studentLevel && ($wSection === null || $wSection === '' || $studentSection === null)) {
+                    return (string)$w['nama_lengkap'];
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        // Fallback jika terjadi error
+    }
+
+    return 'Wali Kelas ' . $kelas;
+}
+
+
 

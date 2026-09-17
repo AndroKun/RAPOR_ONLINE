@@ -59,6 +59,61 @@ $user = current_user();
 $isAdmin = ($user['role'] ?? '') === 'admin';
 $status = $report['status'] ?? 'draft';
 
+// Handle POST to save signatures & notes
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_signatures'])) {
+    verify_csrf();
+
+    $namaWaliKelas = trim($_POST['nama_wali_kelas'] ?? '');
+    $namaKepalaMadrasah = trim($_POST['nama_kepala_madrasah'] ?? '');
+    $catatanWaliKelas = trim($_POST['catatan_wali_kelas'] ?? '');
+    $catatanWaliMurid = trim($_POST['catatan_wali_murid'] ?? '');
+    $tempatRapor = trim($_POST['tempat_rapor'] ?? 'Sidoarjo');
+    $tanggalRapor = trim($_POST['tanggal_rapor'] ?? date('Y-m-d'));
+
+    $stmtUpdRep = $pdo->prepare("INSERT INTO reports (student_id, semester, school_year, status, nama_wali_kelas, nama_kepala_madrasah, catatan_wali_kelas, catatan_wali_murid, tempat_rapor, tanggal_rapor, updated_at)
+        VALUES (:sid, :sem, :sy, 'draft', :nwk, :nkm, :cwk, :cwm, :tr, :tgr, NOW())
+        ON DUPLICATE KEY UPDATE
+        nama_wali_kelas = VALUES(nama_wali_kelas),
+        nama_kepala_madrasah = VALUES(nama_kepala_madrasah),
+        catatan_wali_kelas = VALUES(catatan_wali_kelas),
+        catatan_wali_murid = VALUES(catatan_wali_murid),
+        tempat_rapor = VALUES(tempat_rapor),
+        tanggal_rapor = VALUES(tanggal_rapor),
+        updated_at = NOW()");
+    
+    $stmtUpdRep->execute([
+        'sid' => $studentId,
+        'sem' => $semester,
+        'sy' => $schoolYear,
+        'nwk' => $namaWaliKelas ?: null,
+        'nkm' => $namaKepalaMadrasah ?: null,
+        'cwk' => $catatanWaliKelas ?: null,
+        'cwm' => $catatanWaliMurid ?: null,
+        'tr' => $tempatRapor ?: 'Sidoarjo',
+        'tgr' => $tanggalRapor ?: date('Y-m-d'),
+    ]);
+
+    set_flash('success', 'Pengaturan tanda tangan rapor & pengembangan diri berhasil disimpan.');
+    redirect('/staff/rapor/detail.php?student_id=' . $studentId . '&semester=' . $semester . '&school_year=' . urlencode($schoolYear));
+}
+
+// Wali kelas otomatis berdasarkan kelas murid
+$autoWaliKelas = get_wali_kelas_by_class($pdo, (string)($student['kelas'] ?? ''));
+
+$defaultKepala = $student['nama_kepala_madrasah'] ?? '';
+if (!$defaultKepala) {
+    $stmtKep = $pdo->query("SELECT nama_lengkap FROM users WHERE role = 'admin' LIMIT 1");
+    $defaultKepala = $stmtKep->fetchColumn() ?: '';
+}
+
+// Otomatis terisi mengikuti kelas murid jika belum ada custom nama_wali_kelas
+$namaWaliKelas = !empty($report['nama_wali_kelas']) ? $report['nama_wali_kelas'] : $autoWaliKelas;
+$namaKepalaMadrasah = $report['nama_kepala_madrasah'] ?? $defaultKepala;
+$catatanWaliKelas = $report['catatan_wali_kelas'] ?? '';
+$catatanWaliMurid = $report['catatan_wali_murid'] ?? '';
+$tempatRapor = $report['tempat_rapor'] ?? 'Sidoarjo';
+$tanggalRapor = $report['tanggal_rapor'] ?? date('Y-m-d');
+
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
@@ -239,6 +294,85 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
     <?php endif; ?>
+
+    <!-- D. TANDA TANGAN RAPOR & PENGEMBANGAN DIRI -->
+    <h3 style="color:var(--primary-color); border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:35px;">
+        D. Pengaturan Tanda Tangan Rapor & Pengembangan Diri
+    </h3>
+    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:24px; margin-bottom:30px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+        <form method="POST" action="">
+            <?= csrf_field() ?>
+            <input type="hidden" name="save_signatures" value="1">
+            
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:18px; margin-bottom:20px;">
+                <div class="form-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label style="font-weight:600; font-size:13.5px; margin-bottom:0; color:#1e293b;">
+                            Nama Wali Kelas (Tanda Tangan Pengembangan Diri & Rapor)
+                        </label>
+                        <button type="button" onclick="document.getElementById('input_nama_wali_kelas').value = <?= json_encode($autoWaliKelas) ?>;" 
+                                style="background:none; border:none; color:var(--primary-color); font-size:12px; cursor:pointer; padding:0; text-decoration:underline;">
+                            <i class="fas fa-sync-alt"></i> Reset ke Otomatis
+                        </button>
+                    </div>
+                    <input type="text" id="input_nama_wali_kelas" name="nama_wali_kelas" value="<?= e($namaWaliKelas) ?>" placeholder="<?= e($autoWaliKelas) ?>" required
+                           style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
+                    <small style="color:#64748b; font-size:12px; display:block; margin-top:4px;">
+                        <i class="fas fa-magic" style="color:var(--primary-color);"></i> Otomatis disesuaikan dengan Wali Kelas <strong><?= e($student['kelas'] ?? '') ?></strong> (<?= e($autoWaliKelas) ?>).
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px; color:#1e293b;">
+                        Nama Kepala Madrasah (Tanda Tangan Lembar Rapor)
+                    </label>
+                    <input type="text" name="nama_kepala_madrasah" value="<?= e($namaKepalaMadrasah) ?>" placeholder="Contoh: Ahmad Dahlan, S.Pd.I" required
+                           style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
+                    <small style="color:#64748b; font-size:12px;">Nama kepala madrasah/sekolah untuk pengesahan rapor.</small>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px; color:#1e293b;">
+                        Tempat Titimangsa Rapor
+                    </label>
+                    <input type="text" name="tempat_rapor" value="<?= e($tempatRapor) ?>" placeholder="Sidoarjo" required
+                           style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px; color:#1e293b;">
+                        Tanggal Pembagian Rapor
+                    </label>
+                    <input type="date" name="tanggal_rapor" value="<?= e($tanggalRapor) ?>" required
+                           style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:18px; margin-bottom:20px;">
+                <div class="form-group">
+                    <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px; color:#1e293b;">
+                        Catatan Wali Kelas (Halaman Pengembangan Diri & Pembiasaan)
+                    </label>
+                    <textarea name="catatan_wali_kelas" rows="3" placeholder="Tuliskan catatan kemajuan, sikap, atau pesan wali kelas untuk siswa..."
+                              style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:13.5px; resize:vertical;"><?= e($catatanWaliKelas) ?></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px; color:#1e293b;">
+                        Catatan Wali Murid (Opsional)
+                    </label>
+                    <textarea name="catatan_wali_murid" rows="3" placeholder="Catatan atau tanggapan orang tua/wali murid..."
+                              style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:13.5px; resize:vertical;"><?= e($catatanWaliMurid) ?></textarea>
+                </div>
+            </div>
+
+            <div style="text-align:right;">
+                <button type="submit" class="btn btn-primary" style="padding:10px 24px; font-size:14px;">
+                    💾 Simpan Pengaturan Tanda Tangan & Catatan
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 

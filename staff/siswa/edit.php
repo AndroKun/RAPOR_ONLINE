@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../includes/fungsi.php';
 require_once __DIR__ . '/../../includes/auth.php';
 
-require_login();
+require_student_manage_access();
 
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$id) {
@@ -24,6 +24,23 @@ $student = $stmt->fetch();
 if (!$student) {
     set_flash('danger', 'Data siswa tidak ditemukan.');
     redirect('/staff/siswa/index.php');
+}
+
+$currentUser = current_user();
+$userRole = $currentUser['role'] ?? 'staff';
+$waliKelas = current_user_wali_kelas_class();
+
+if ($userRole === 'wali_kelas' && $waliKelas !== null && $waliKelas !== '') {
+    $kMap = match(strtoupper(trim($waliKelas))) {
+        'VII', '7' => ['VII', '7'],
+        'VIII', '8' => ['VIII', '8'],
+        'IX', '9' => ['IX', '9'],
+        default => [strtoupper(trim($waliKelas))]
+    };
+    if (!in_array(strtoupper(trim((string)$student['kelas'])), $kMap, true)) {
+        set_flash('danger', 'Akses ditolak: Anda hanya dapat mengedit data siswa di kelas binaan Anda (Kelas ' . $waliKelas . ').');
+        redirect('/staff/siswa/index.php');
+    }
 }
 
 $pageTitle = 'Edit Data Siswa - ' . $student['nama'];
@@ -46,6 +63,7 @@ $kelas = $student['kelas'];
 $tanggal_diterima = $student['tanggal_diterima'];
 $sekolah_asal = $student['sekolah_asal'];
 $alamat_sekolah_asal = $student['alamat_sekolah_asal'];
+$nama_kepala_madrasah = $student['nama_kepala_madrasah'] ?? '';
 
 $nama_ayah = $student['nama_ayah'] ?? '';
 $nama_ibu = $student['nama_ibu'] ?? '';
@@ -73,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tanggal_diterima = trim($_POST['tanggal_diterima'] ?? '');
     $sekolah_asal = trim($_POST['sekolah_asal'] ?? '');
     $alamat_sekolah_asal = trim($_POST['alamat_sekolah_asal'] ?? '');
+    $nama_kepala_madrasah = trim($_POST['nama_kepala_madrasah'] ?? '');
 
     $nama_ayah = trim($_POST['nama_ayah'] ?? '');
     $nama_ibu = trim($_POST['nama_ibu'] ?? '');
@@ -108,7 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 tempat_lahir = :tempat_lahir, tanggal_lahir = :tanggal_lahir, agama = :agama,
                 anak_ke = :anak_ke, status_keluarga = :status_keluarga, alamat = :alamat,
                 kelas = :kelas, tanggal_diterima = :tanggal_diterima, sekolah_asal = :sekolah_asal,
-                alamat_sekolah_asal = :alamat_sekolah_asal WHERE id = :id");
+                alamat_sekolah_asal = :alamat_sekolah_asal,
+                nama_kepala_madrasah = :nama_kepala_madrasah WHERE id = :id");
             
             $stmtUpdate->execute([
                 'id' => $id,
@@ -126,6 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'tanggal_diterima' => $tanggal_diterima ?: null,
                 'sekolah_asal' => $sekolah_asal ?: null,
                 'alamat_sekolah_asal' => $alamat_sekolah_asal ?: null,
+                'nama_kepala_madrasah' => $nama_kepala_madrasah ?: null,
             ]);
 
             // Update/Upsert Guardians
@@ -283,6 +304,11 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="form-group">
                     <label>17. Pekerjaan Wali</label>
                     <input type="text" name="pekerjaan_wali" value="<?= e($pekerjaan_wali) ?>">
+                </div>
+                <div class="form-group full-width" style="border-top: 1px dashed #ccc; padding-top: 15px; margin-top: 10px;">
+                    <label>18. Nama Kepala Madrasah (Tanda Tangan Lembar Data Diri Siswa)</label>
+                    <input type="text" name="nama_kepala_madrasah" value="<?= e($nama_kepala_madrasah) ?>" placeholder="Contoh: Ahmad Dahlan, S.Pd.I">
+                    <small style="color: #64748b;">Nama penandatangan pada bagian kanan bawah lembar Data Diri Siswa (kosongkan jika ingin default).</small>
                 </div>
             </div>
         </div>

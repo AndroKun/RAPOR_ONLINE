@@ -178,8 +178,12 @@ require_once __DIR__ . '/../includes/header.php';
                                     <?php if ($userRole === 'guru_tahfidh'): ?>
                                         <a href="<?= e(base_url('/staff/tahfidh/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📖 Input Tahfidh</a>
                                     <?php elseif ($userRole === 'admin'): ?>
+                                        <a href="<?= e(base_url('/staff/siswa/edit.php?id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm" title="Edit Data Diri Siswa">✏️ Edit Siswa</a>
                                         <a href="<?= e(base_url('/staff/nilai/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📝 Nilai Mapel</a>
                                         <a href="<?= e(base_url('/staff/tahfidh/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📖 Tahfidh</a>
+                                    <?php elseif ($userRole === 'wali_kelas'): ?>
+                                        <a href="<?= e(base_url('/staff/siswa/edit.php?id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm" title="Edit Data Diri Siswa">✏️ Edit Siswa</a>
+                                        <a href="<?= e(base_url('/staff/nilai/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📝 Edit Nilai</a>
                                     <?php else: ?>
                                         <a href="<?= e(base_url('/staff/nilai/input.php?student_id=' . (int)$row['id'])) ?>" class="btn btn-ghost btn-sm">📝 Edit Nilai</a>
                                     <?php endif; ?>
@@ -211,6 +215,10 @@ require_once __DIR__ . '/../includes/header.php';
 
     <div class="quick-access-grid">
         <?php if ($userRole === 'admin'): ?>
+            <a href="<?= e(base_url('/staff/siswa/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">S</span>
+                <span><strong>Data Siswa</strong><small>Kelola dan edit data siswa</small></span>
+            </a>
             <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="quick-access-item">
                 <span class="quick-access-icon">+</span>
                 <span><strong>Tambah Siswa</strong><small>Daftarkan data siswa baru</small></span>
@@ -236,6 +244,14 @@ require_once __DIR__ . '/../includes/header.php';
                 <span><strong>Riwayat Pengisian</strong><small>Lihat aktivitas pengisian nilai</small></span>
             </a>
         <?php else: ?>
+            <a href="<?= e(base_url('/staff/siswa/index.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">S</span>
+                <span><strong>Data Siswa</strong><small>Lihat &amp; edit siswa kelas <?= e($waliKelas ?: '') ?></small></span>
+            </a>
+            <a href="<?= e(base_url('/staff/inputsiswa.php')) ?>" class="quick-access-item">
+                <span class="quick-access-icon">+</span>
+                <span><strong>Tambah Siswa</strong><small>Daftarkan siswa baru kelas <?= e($waliKelas ?: '') ?></small></span>
+            </a>
             <a href="<?= e(base_url('/staff/nilai/index.php')) ?>" class="quick-access-item">
                 <span class="quick-access-icon">N</span>
                 <span><strong>Input Nilai Akademik</strong><small>Isi nilai siswa kelas <?= e($waliKelas ?: 'Anda') ?></small></span>

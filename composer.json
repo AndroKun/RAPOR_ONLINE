@@ -1,0 +1,6 @@
+{
+    "require": {
+        "setasign/tfpdf": "^1.33",
+        "khaled.alshamaa/ar-php": "^7.0"
+    }
+}

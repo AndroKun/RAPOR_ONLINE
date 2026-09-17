@@ -308,7 +308,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="form-group">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
                         <label style="font-weight:600; font-size:13.5px; margin-bottom:0; color:#1e293b;">
-                            Nama Wali Kelas (Tanda Tangan Pengembangan Diri & Rapor)
+                            Nama Wali Kelas / Penandatangan Rapor
                         </label>
                         <button type="button" onclick="document.getElementById('input_nama_wali_kelas').value = <?= json_encode($autoWaliKelas) ?>;" 
                                 style="background:none; border:none; color:var(--primary-color); font-size:12px; cursor:pointer; padding:0; text-decoration:underline;">
@@ -318,7 +318,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     <input type="text" id="input_nama_wali_kelas" name="nama_wali_kelas" value="<?= e($namaWaliKelas) ?>" placeholder="<?= e($autoWaliKelas) ?>" required
                            style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
                     <small style="color:#64748b; font-size:12px; display:block; margin-top:4px;">
-                        <i class="fas fa-magic" style="color:var(--primary-color);"></i> Otomatis disesuaikan dengan Wali Kelas <strong><?= e($student['kelas'] ?? '') ?></strong> (<?= e($autoWaliKelas) ?>).
+                        <i class="fas fa-magic" style="color:var(--primary-color);"></i> Isi nama yang akan dicetak di bawah kolom tanda tangan Wali Kelas. Otomatis untuk kelas <strong><?= e($student['kelas'] ?? '') ?></strong>: <?= e($autoWaliKelas) ?>.
                     </small>
                 </div>
 

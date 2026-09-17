@@ -194,6 +194,7 @@ require_once __DIR__ . '/../../includes/header.php';
                             <td data-label="Aksi" style="text-align: center;">
                                 <div class="actions" style="justify-content: center; gap: 4px;">
                                     <a href="<?= e(base_url('/staff/rapor/detail.php?student_id=' . (int)$rep['student_id'] . '&semester=' . $semester . '&school_year=' . urlencode($schoolYear))) ?>" class="btn btn-ghost btn-sm" title="Pratinjau Rapor">Preview</a>
+                                    <a href="<?= e(base_url('/staff/rapor/detail.php?student_id=' . (int)$rep['student_id'] . '&semester=' . $semester . '&school_year=' . urlencode($schoolYear) . '#input_nama_wali_kelas')) ?>" class="btn btn-ghost btn-sm" title="Atur nama Wali Kelas dan Kepala Madrasah">Atur TTD</a>
                                     
                                     <a href="<?= e(base_url('/staff/rapor/cetak.php?student_id=' . (int)$rep['student_id'] . '&semester=' . $semester . '&school_year=' . urlencode($schoolYear))) ?>" target="_blank" class="btn btn-gold btn-sm" title="Cetak PDF">PDF</a>
 

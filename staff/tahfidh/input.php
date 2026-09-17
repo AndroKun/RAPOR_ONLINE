@@ -271,7 +271,7 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
 
     <!-- Card Tanda Tangan Tahfidh -->
-    <div class="card" style="margin-top: 24px; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: #ffffff;">
+    <div id="tanda-tangan-tahfidh" class="card" style="margin-top: 24px; padding: 20px; border-radius: 12px; border: 1px solid var(--line); background: #ffffff;">
         <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 16px; font-weight: 700; color: var(--green-900); display: flex; align-items: center; gap: 8px;">
             ✍️ Tanda Tangan Laporan Hasil Kegiatan Tahfidh
         </h3>

@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_signatures'])) {
 
     $namaWaliKelas = trim($_POST['nama_wali_kelas'] ?? '');
     $namaKepalaMadrasah = trim($_POST['nama_kepala_madrasah'] ?? '');
+    $namaGuruBahasaArab = trim($_POST['nama_guru_bahasa_arab'] ?? '');
     $catatanWaliKelas = trim($_POST['catatan_wali_kelas'] ?? '');
     $catatanWaliMurid = trim($_POST['catatan_wali_murid'] ?? '');
     $tempatRapor = trim($_POST['tempat_rapor'] ?? 'Sidoarjo');
@@ -93,6 +94,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_signatures'])) {
         'tgr' => $tanggalRapor ?: date('Y-m-d'),
     ]);
 
+    $stmtUpdArabNotes = $pdo->prepare("INSERT INTO arabic_notes (student_id, semester, school_year, nama_guru, created_at, updated_at)
+        VALUES (:sid, :sem, :sy, :nama_guru, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE nama_guru = VALUES(nama_guru), updated_at = NOW()");
+    $stmtUpdArabNotes->execute([
+        'sid' => $studentId,
+        'sem' => $semester,
+        'sy' => $schoolYear,
+        'nama_guru' => $namaGuruBahasaArab ?: null,
+    ]);
+
     set_flash('success', 'Pengaturan tanda tangan rapor & pengembangan diri berhasil disimpan.');
     redirect('/staff/rapor/detail.php?student_id=' . $studentId . '&semester=' . $semester . '&school_year=' . urlencode($schoolYear));
 }
@@ -109,6 +120,7 @@ if (!$defaultKepala) {
 // Otomatis terisi mengikuti kelas murid jika belum ada custom nama_wali_kelas
 $namaWaliKelas = !empty($report['nama_wali_kelas']) ? $report['nama_wali_kelas'] : $autoWaliKelas;
 $namaKepalaMadrasah = $report['nama_kepala_madrasah'] ?? $defaultKepala;
+$namaGuruBahasaArab = $arabicNotes['nama_guru'] ?? '';
 $catatanWaliKelas = $report['catatan_wali_kelas'] ?? '';
 $catatanWaliMurid = $report['catatan_wali_murid'] ?? '';
 $tempatRapor = $report['tempat_rapor'] ?? 'Sidoarjo';
@@ -299,6 +311,12 @@ require_once __DIR__ . '/../../includes/header.php';
     <h3 style="color:var(--primary-color); border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:35px;">
         D. Pengaturan Tanda Tangan Rapor & Pengembangan Diri
     </h3>
+    <div style="margin:0 0 12px 0;">
+        <a href="<?= e(base_url('/staff/tahfidh/input.php?student_id=' . $studentId . '&semester=' . $semester . '&school_year=' . urlencode($schoolYear) . '#tanda-tangan-tahfidh')) ?>" class="btn btn-ghost btn-sm">
+            Atur Nama Guru Tahfidh
+        </a>
+        <small style="margin-left:8px; color:#64748b;">Textbox ini ada di bagian tanda tangan laporan Tahfidh.</small>
+    </div>
     <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:24px; margin-bottom:30px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
         <form method="POST" action="">
             <?= csrf_field() ?>
@@ -329,6 +347,15 @@ require_once __DIR__ . '/../../includes/header.php';
                     <input type="text" name="nama_kepala_madrasah" value="<?= e($namaKepalaMadrasah) ?>" placeholder="Contoh: Ahmad Dahlan, S.Pd.I" required
                            style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
                     <small style="color:#64748b; font-size:12px;">Nama kepala madrasah/sekolah untuk pengesahan rapor.</small>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-weight:600; font-size:13.5px; display:block; margin-bottom:6px; color:#1e293b;">
+                        Nama Guru Bahasa Arab (Tanda Tangan Halaman 4)
+                    </label>
+                    <input type="text" name="nama_guru_bahasa_arab" value="<?= e($namaGuruBahasaArab) ?>" placeholder="Contoh: Ustadz Ahmad, S.Pd.I"
+                           style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px;">
+                    <small style="color:#64748b; font-size:12px;">Nama ini dicetak pada tanda tangan laporan Bahasa Arab.</small>
                 </div>
 
                 <div class="form-group">

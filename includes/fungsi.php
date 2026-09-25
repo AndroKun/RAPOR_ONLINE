@@ -28,7 +28,7 @@ function base_url(string $path = ''): string
         $rootDir = str_replace('\\', '/', realpath(__DIR__ . '/..') ?: '');
         $docRootDir = str_replace('\\', '/', realpath($docRoot) ?: '');
 
-        if ($rootDir !== '' && $docRootDir !== '' && str_starts_with($rootDir, $docRootDir)) {
+        if ($rootDir !== '' && $docRootDir !== '' && strpos($rootDir, $docRootDir) === 0) {
             $subPath = substr($rootDir, strlen($docRootDir));
             $baseUrl = rtrim($subPath, '/');
         } else {
@@ -43,9 +43,9 @@ function base_url(string $path = ''): string
 /**
  * Redirect to relative or base URL
  */
-function redirect(string $path): never
+function redirect(string $path): void
 {
-    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+    if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
         header("Location: {$path}");
     } else {
         $url = base_url($path);

@@ -1,5 +1,6 @@
 {
     "require": {
+        "php": "7.2.34",
         "setasign/tfpdf": "^1.33",
         "khaled.alshamaa/ar-php": "^7.0"
     }

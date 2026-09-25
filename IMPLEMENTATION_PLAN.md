@@ -12,7 +12,7 @@ Membangun aplikasi Rapor Online berbasis web dinamis untuk MTs Roudlotul Qur'an 
    - Pencarian berdasarkan NISN atau Nama Siswa.
    - **Hanya menampilkan dan mengizinkan unduh PDF** untuk rapor yang sudah berstatus `published`. Data pribadi sensitif (alamat lengkap, tanggal lahir, kontak orang tua/wali) tetap terlindungi dan tidak ditampilkan ke publik.
 
-Aplikasi dibangun menggunakan **PHP 8.2+ Native**, **MySQL/MariaDB**, **PDO**, **HTML5**, dan **CSS murni** (berdasarkan `Staff/desainstaff.css` dan `Wali dan Murid/desainrapor.css`). Kompatibel dengan lingkungan XAMPP standar (`http://localhost/RAPOR_ONLINE/`) maupun virtual host / built-in PHP server (`http://localhost:8000/`).
+Aplikasi dibangun menggunakan **PHP 7.2.34 Native**, **MySQL/MariaDB**, **PDO**, **HTML5**, dan **CSS murni** (berdasarkan `Staff/desainstaff.css` dan `Wali dan Murid/desainrapor.css`). Kompatibel dengan lingkungan XAMPP standar (`http://localhost/RAPOR_ONLINE/`) maupun virtual host / built-in PHP server (`http://localhost:8000/`).
 
 ---
 

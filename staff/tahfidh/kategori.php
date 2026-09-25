@@ -148,9 +148,9 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <strong>📖 <?= e($cat['nama_kategori']) ?></strong>
                                 </td>
                                 <td data-label="Kelompok">
-                                    <?php if (str_contains($cat['kelompok'], 'Juz')): ?>
+                                    <?php if (strpos($cat['kelompok'], 'Juz') !== false): ?>
                                         <span class="badge badge-green"><?= e($cat['kelompok']) ?></span>
-                                    <?php elseif (str_contains($cat['kelompok'], 'Surat')): ?>
+                                    <?php elseif (strpos($cat['kelompok'], 'Surat') !== false): ?>
                                         <span class="badge badge-amber"><?= e($cat['kelompok']) ?></span>
                                     <?php else: ?>
                                         <span class="badge badge-secondary"><?= e($cat['kelompok']) ?></span>

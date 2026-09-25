@@ -146,9 +146,9 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <strong><?= e($sb['nama_mapel']) ?></strong>
                                 </td>
                                 <td data-label="Kelompok">
-                                    <?php if (str_contains($sb['kelompok'], 'Agama')): ?>
+                                    <?php if (strpos($sb['kelompok'], 'Agama') !== false): ?>
                                         <span class="badge badge-green"><?= e($sb['kelompok']) ?></span>
-                                    <?php elseif (str_contains($sb['kelompok'], 'Muatan')): ?>
+                                    <?php elseif (strpos($sb['kelompok'], 'Muatan') !== false): ?>
                                         <span class="badge badge-amber"><?= e($sb['kelompok']) ?></span>
                                     <?php else: ?>
                                         <span class="badge badge-secondary"><?= e($sb['kelompok']) ?></span>

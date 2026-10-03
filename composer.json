@@ -1,6 +1,11 @@
 {
     "require": {
-        "php": ">=7.2.0 <9.0",
+        "php": ">=8.4 <8.5",
+        "ext-calendar": "*",
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-zlib": "*",
         "setasign/tfpdf": "^1.33",
         "khaled.alshamaa/ar-php": "^7.0"
     }

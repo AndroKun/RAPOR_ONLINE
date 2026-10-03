@@ -5,6 +5,12 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../config/koneksi.php';
 require_once __DIR__ . '/../../includes/fungsi.php';
 require_once __DIR__ . '/../../includes/auth.php';
+
+if (!extension_loaded('mbstring') || !extension_loaded('zlib')) {
+    http_response_code(500);
+    exit('Fitur cetak PDF membutuhkan ekstensi PHP mbstring dan zlib. Aktifkan keduanya melalui pengaturan PHP hosting.');
+}
+
 require_once __DIR__ . '/../../includes/pdf_helper.php';
 
 require_login();

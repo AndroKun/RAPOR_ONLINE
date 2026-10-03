@@ -21,23 +21,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($username === '' || $password === '') {
         $error = 'Username dan password wajib diisi.';
     } else {
-        $stmt = $pdo->prepare('SELECT id, username, password_hash, nama_lengkap, role, mata_pelajaran, kelas_wali, is_active FROM users WHERE username = :username LIMIT 1');
-        $stmt->execute(['username' => $username]);
-        $user = $stmt->fetch();
+        try {
+            $stmt = $pdo->prepare('SELECT id, username, password_hash, nama_lengkap, role, mata_pelajaran, kelas_wali, is_active FROM users WHERE username = :username LIMIT 1');
+            $stmt->execute(['username' => $username]);
+            $user = $stmt->fetch();
 
-        if ($user && (int)$user['is_active'] === 1) {
-            // Check password
-            if (password_verify($password, $user['password_hash']) || ($password === 'admin123' && $username === 'admin') || ($password === 'staff123' && $username === 'staff')) {
-                session_regenerate_id(true);
-                unset($user['password_hash']);
-                $_SESSION['user'] = $user;
-                set_flash('success', "Selamat datang kembali, {$user['nama_lengkap']}!");
-                redirect(user_home_route($user));
+            if ($user && (int)$user['is_active'] === 1) {
+                if (password_verify($password, $user['password_hash']) || ($password === 'admin123' && $username === 'admin') || ($password === 'staff123' && $username === 'staff')) {
+                    session_regenerate_id(true);
+                    unset($user['password_hash']);
+                    $_SESSION['user'] = $user;
+                    set_flash('success', "Selamat datang kembali, {$user['nama_lengkap']}!");
+                    redirect(user_home_route($user));
+                } else {
+                    $error = 'Password yang Anda masukkan salah.';
+                }
             } else {
-                $error = 'Password yang Anda masukkan salah.';
+                $error = 'Akun tidak ditemukan atau berstatus nonaktif.';
             }
-        } else {
-            $error = 'Akun tidak ditemukan atau berstatus nonaktif.';
+        } catch (PDOException $exception) {
+            error_log('RAPOR_ONLINE login database error: ' . $exception->getMessage());
+            $error = 'Login tidak dapat diproses. Periksa konfigurasi database hosting dan pastikan schema sudah di-import.';
         }
     }
 }

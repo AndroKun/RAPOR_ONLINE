@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS `students` (
     `tanggal_diterima` DATE NULL,
     `sekolah_asal` VARCHAR(150) NULL,
     `alamat_sekolah_asal` TEXT NULL,
+    `nama_kepala_madrasah` VARCHAR(150) NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_students_nama` (`nama`),
@@ -99,6 +100,12 @@ CREATE TABLE IF NOT EXISTS `reports` (
     `school_year` VARCHAR(9) NOT NULL,
     `status` ENUM('draft', 'ready', 'published') NOT NULL DEFAULT 'draft',
     `pdf_path` VARCHAR(255) NULL,
+    `nama_wali_kelas` VARCHAR(150) NULL,
+    `nama_kepala_madrasah` VARCHAR(150) NULL,
+    `catatan_wali_kelas` TEXT NULL,
+    `catatan_wali_murid` TEXT NULL,
+    `tempat_rapor` VARCHAR(100) NOT NULL DEFAULT 'Sidoarjo',
+    `tanggal_rapor` DATE NULL,
     `published_at` TIMESTAMP NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -107,7 +114,40 @@ CREATE TABLE IF NOT EXISTS `reports` (
     INDEX `idx_reports_search` (`status`, `school_year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. Tabel Master Elemen Bahasa Arab
+-- 7. Catatan tanda tangan Tahfidh
+CREATE TABLE IF NOT EXISTS `tahfidh_notes` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id` INT UNSIGNED NOT NULL,
+    `semester` TINYINT UNSIGNED NOT NULL,
+    `school_year` VARCHAR(9) NOT NULL,
+    `diberikan_di` VARCHAR(100) NOT NULL DEFAULT 'Sidoarjo',
+    `tanggal` DATE NULL,
+    `nama_guru` VARCHAR(150) NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_tahfidh_notes_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `uq_tahfidh_student_period_note` (`student_id`, `semester`, `school_year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 8. Master mata pelajaran
+CREATE TABLE IF NOT EXISTS `subjects` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `nama_mapel` VARCHAR(100) NOT NULL UNIQUE,
+    `kelompok` VARCHAR(100) NOT NULL DEFAULT 'Kelompok B (Umum)',
+    `urutan` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. Master kategori Tahfidh
+CREATE TABLE IF NOT EXISTS `tahfidh_categories` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `nama_kategori` VARCHAR(150) NOT NULL UNIQUE,
+    `kelompok` VARCHAR(100) NOT NULL DEFAULT 'Hafalan Al-Qur''an',
+    `urutan` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 10. Tabel Master Elemen Bahasa Arab
 CREATE TABLE IF NOT EXISTS `arabic_categories` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `nama_kategori` VARCHAR(150) NOT NULL UNIQUE,
@@ -115,7 +155,7 @@ CREATE TABLE IF NOT EXISTS `arabic_categories` (
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Tabel Nilai Bahasa Arab (4 Elemen Capaian Pembelajaran)
+-- 11. Tabel Nilai Bahasa Arab (4 Elemen Capaian Pembelajaran)
 CREATE TABLE IF NOT EXISTS `arabic_grades` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_id` INT UNSIGNED NOT NULL,
@@ -132,7 +172,7 @@ CREATE TABLE IF NOT EXISTS `arabic_grades` (
     INDEX `idx_arabic_student_period` (`student_id`, `semester`, `school_year`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 9. Tabel Catatan / Saran Rapor Bahasa Arab
+-- 12. Tabel Catatan / Saran Rapor Bahasa Arab
 CREATE TABLE IF NOT EXISTS `arabic_notes` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `student_id` INT UNSIGNED NOT NULL,

@@ -35,6 +35,8 @@ Aplikasi Rapor Online berbasis **PHP Native** dan **MySQL/MariaDB** dengan gener
 
 ## Cara Instalasi & Menjalankan di XAMPP
 
+**Persyaratan runtime:** PHP 8.4.x, ekstensi `pdo_mysql`, `mbstring`, `calendar`, dan `zlib`, serta MySQL/MariaDB.
+
 1. **Nyalakan Apache & MySQL** di panel XAMPP Control Panel.
 2. Buka **phpMyAdmin** (`http://localhost/phpmyadmin/`).
 3. Buat database baru bernama `raporonline` (atau database otomatis dibuat saat import).

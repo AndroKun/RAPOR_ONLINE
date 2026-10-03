@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "57b72c5d24a6e8fb94042060f3fdf2e5",
+    "content-hash": "899e13d3e88833bf15e0ec4da46cd107",
     "packages": [
         {
             "name": "khaled.alshamaa/ar-php",
@@ -131,7 +131,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=7.2.0 <9.0"
+        "php": ">=8.4 <8.5"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"

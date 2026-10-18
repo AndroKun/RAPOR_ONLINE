@@ -126,12 +126,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $scVal = isset($scores[$i]) && $scores[$i] !== '' ? (float)$scores[$i] : ($pr === 'A' ? 95 : ($pr === 'B' ? 85 : 70));
             $ds = trim((string)($descriptions[$i] ?? ''));
             if ($ds === '') {
-                $ds = match($pr) {
-                    'A' => 'Melampaui Target',
-                    'B' => 'Sesuai Target',
-                    'C' => 'Belum sesuai target',
-                    default => 'Sesuai Target'
-                };
+                switch ($pr) {
+                    case 'A':
+                        $ds = 'Melampaui Target';
+                        break;
+                    case 'B':
+                        $ds = 'Sesuai Target';
+                        break;
+                    case 'C':
+                        $ds = 'Belum sesuai target';
+                        break;
+                    default:
+                        $ds = 'Sesuai Target';
+                }
             }
 
             $stmtInsertGrade->execute([

@@ -37,22 +37,12 @@ if ($search !== '') {
 }
 
 if ($kelasFilter !== '') {
-    $kMap = match(strtoupper($kelasFilter)) {
-        'VII', '7' => ['VII', '7'],
-        'VIII', '8' => ['VIII', '8'],
-        'IX', '9' => ['IX', '9'],
-        default => [strtoupper($kelasFilter)]
-    };
+    $kMap = class_filter_aliases(strtoupper($kelasFilter));
     $sql .= " AND (s.kelas = :k1 OR s.kelas = :k2)";
     $params['k1'] = $kMap[0];
     $params['k2'] = $kMap[1] ?? $kMap[0];
 } elseif ($isWaliKelas && $waliKelasScope) {
-    $kMap = match(strtoupper($waliKelasScope)) {
-        'VII', '7' => ['VII', '7'],
-        'VIII', '8' => ['VIII', '8'],
-        'IX', '9' => ['IX', '9'],
-        default => [strtoupper($waliKelasScope)]
-    };
+    $kMap = class_filter_aliases(strtoupper($waliKelasScope));
     $sql .= " AND (s.kelas = :wk1 OR s.kelas = :wk2)";
     $params['wk1'] = $kMap[0];
     $params['wk2'] = $kMap[1] ?? $kMap[0];

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "899e13d3e88833bf15e0ec4da46cd107",
+    "content-hash": "aec0c8650f9c36c11807821e08d0a349",
     "packages": [
         {
             "name": "khaled.alshamaa/ar-php",
@@ -131,7 +131,12 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=8.4 <8.5"
+        "php": ">=7.2",
+        "ext-calendar": "*",
+        "ext-mbstring": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-zlib": "*"
     },
     "platform-dev": {},
     "plugin-api-version": "2.6.0"

@@ -31,12 +31,7 @@ $userRole = $currentUser['role'] ?? 'staff';
 $waliKelas = current_user_wali_kelas_class();
 
 if ($userRole === 'wali_kelas' && $waliKelas !== null && $waliKelas !== '') {
-    $kMap = match(strtoupper(trim($waliKelas))) {
-        'VII', '7' => ['VII', '7'],
-        'VIII', '8' => ['VIII', '8'],
-        'IX', '9' => ['IX', '9'],
-        default => [strtoupper(trim($waliKelas))]
-    };
+    $kMap = class_filter_aliases(strtoupper(trim($waliKelas)));
     if (!in_array(strtoupper(trim((string)$student['kelas'])), $kMap, true)) {
         set_flash('danger', 'Akses ditolak: Anda hanya dapat mengedit data siswa di kelas binaan Anda (Kelas ' . $waliKelas . ').');
         redirect('/staff/siswa/index.php');

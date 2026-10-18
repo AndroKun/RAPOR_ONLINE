@@ -634,12 +634,19 @@ function rapor_arab_page(RaporTemplatePDF $pdf, array $student, array $report, a
         if ($grade) {
             $desc = trim((string)($grade['description'] ?? ''));
             if ($desc === '' && $pred !== '') {
-                $desc = match($pred) {
-                    'A' => 'Melampaui Target',
-                    'B' => 'Sesuai Target',
-                    'C' => 'Belum sesuai target',
-                    default => ''
-                };
+                switch ($pred) {
+                    case 'A':
+                        $desc = 'Melampaui Target';
+                        break;
+                    case 'B':
+                        $desc = 'Sesuai Target';
+                        break;
+                    case 'C':
+                        $desc = 'Belum sesuai target';
+                        break;
+                    default:
+                        $desc = '';
+                }
             }
         }
         

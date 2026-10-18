@@ -376,12 +376,7 @@ if ($isAdmin || $isGuruArab) {
 
         if ($kelasFilter !== '') {
             $arabSql .= " AND (s.kelas = :kelas_ab1 OR s.kelas = :kelas_ab2)";
-            $kMapAb = match($kelasFilter) {
-                'VII', '7' => ['VII', '7'],
-                'VIII', '8' => ['VIII', '8'],
-                'IX', '9' => ['IX', '9'],
-                default => [$kelasFilter, $kelasFilter]
-            };
+            $kMapAb = class_filter_aliases($kelasFilter);
             $params['kelas_ab1'] = $kMapAb[0];
             $params['kelas_ab2'] = $kMapAb[1];
         }

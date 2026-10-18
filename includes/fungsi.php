@@ -14,6 +14,23 @@ function e(?string $value): string
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
 }
 
+function class_filter_aliases(string $kelas): array
+{
+    switch ($kelas) {
+        case 'VII':
+        case '7':
+            return ['VII', '7'];
+        case 'VIII':
+        case '8':
+            return ['VIII', '8'];
+        case 'IX':
+        case '9':
+            return ['IX', '9'];
+        default:
+            return [$kelas, $kelas];
+    }
+}
+
 /**
  * Resolve application base URL automatically for XAMPP subfolder or virtual host
  */
@@ -255,6 +272,5 @@ function get_wali_kelas_by_class(PDO $pdo, string $kelas): string
 
     return 'Wali Kelas ' . $kelas;
 }
-
 
 

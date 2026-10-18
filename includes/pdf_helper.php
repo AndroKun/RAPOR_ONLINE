@@ -148,7 +148,7 @@ class RaporTemplatePDF extends tFPDF
     }
 }
 
-function rapor_text(mixed $value, string $fallback = ''): string
+function rapor_text($value, string $fallback = ''): string
 {
     $text = trim((string)($value ?? ''));
     return $text !== '' ? $text : $fallback;
@@ -845,7 +845,9 @@ function generate_rapor_pdf(
 
     // Fallback bila tetap kosong: ambil dari academicGrades yang bermapel arab
     if (empty($arabicGrades)) {
-        $arabicGrades = array_values(array_filter($academicGrades, static fn(array $grade): bool => stripos((string)$grade['subject'], 'arab') !== false));
+        $arabicGrades = array_values(array_filter($academicGrades, static function (array $grade): bool {
+            return stripos((string)$grade['subject'], 'arab') !== false;
+        }));
     }
 
     if (empty($arabicNotes['nama_guru']) && !empty($tahfidhNotes['nama_guru'])) {
@@ -863,4 +865,3 @@ function generate_rapor_pdf(
     if ($dest === 'I' || $dest === 'D') { if (!headers_sent()) { header('Content-Type: application/pdf'); header('Content-Disposition: ' . ($dest === 'D' ? 'attachment' : 'inline') . '; filename="' . $filename . '"'); header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0'); header('Pragma: no-cache'); header('Expires: 0'); } }
     return $pdf->Output($dest, $filename);
 }
-

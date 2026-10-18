@@ -280,12 +280,7 @@ if ($isAdmin || $isGuruMapel) {
 
         if ($kelasFilter !== '') {
             $acadSql .= " AND (s.kelas = :kelas_a1 OR s.kelas = :kelas_a2)";
-            $kMapA = match($kelasFilter) {
-                'VII', '7' => ['VII', '7'],
-                'VIII', '8' => ['VIII', '8'],
-                'IX', '9' => ['IX', '9'],
-                default => [$kelasFilter, $kelasFilter]
-            };
+            $kMapA = class_filter_aliases($kelasFilter);
             $params['kelas_a1'] = $kMapA[0];
             $params['kelas_a2'] = $kMapA[1];
         }
@@ -333,12 +328,7 @@ if ($isAdmin || $isGuruTahfidh) {
 
         if ($kelasFilter !== '') {
             $tahfSql .= " AND (s.kelas = :kelas_t1 OR s.kelas = :kelas_t2)";
-            $kMapT = match($kelasFilter) {
-                'VII', '7' => ['VII', '7'],
-                'VIII', '8' => ['VIII', '8'],
-                'IX', '9' => ['IX', '9'],
-                default => [$kelasFilter, $kelasFilter]
-            };
+            $kMapT = class_filter_aliases($kelasFilter);
             $params['kelas_t1'] = $kMapT[0];
             $params['kelas_t2'] = $kMapT[1];
         }

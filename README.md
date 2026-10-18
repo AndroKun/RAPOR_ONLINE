@@ -1,6 +1,6 @@
 # RAPOR ONLINE - MTs ROUDLOTUL QUR'AN
 
-Aplikasi Rapor Online berbasis **PHP Native** dan **MySQL/MariaDB** dengan generator PDF mandiri, sistem autentikasi multi-role (Admin & Staff), dan portal pencarian publik untuk wali murid.
+Aplikasi Rapor Online berbasis **PHP Native (kompatibel PHP 7.2)** dan **MySQL/MariaDB** dengan generator PDF mandiri, sistem autentikasi multi-role (Admin & Staff), dan portal pencarian publik untuk wali murid.
 
 ---
 

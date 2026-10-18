@@ -55,12 +55,7 @@ if ($search !== '') {
 
 if ($kelasFilter !== '') {
     $sql .= " AND (s.kelas = :k1 OR s.kelas = :k2)";
-    $kMap = match($kelasFilter) {
-        'VII', '7' => ['VII', '7'],
-        'VIII', '8' => ['VIII', '8'],
-        'IX', '9' => ['IX', '9'],
-        default => [$kelasFilter, $kelasFilter]
-    };
+    $kMap = class_filter_aliases($kelasFilter);
     $params['k1'] = $kMap[0];
     $params['k2'] = $kMap[1];
 }

@@ -8,5 +8,10 @@
         "ext-zlib": "*",
         "setasign/tfpdf": "^1.33",
         "khaled.alshamaa/ar-php": "^7.0"
+    },
+    "config": {
+        "platform": {
+            "php": "7.2.0"
+        }
     }
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "aec0c8650f9c36c11807821e08d0a349",
+    "content-hash": "736cc6c7b8d6e007da5686807cffa165",
     "packages": [
         {
             "name": "khaled.alshamaa/ar-php",
@@ -71,16 +71,16 @@
         },
         {
             "name": "setasign/tfpdf",
-            "version": "v1.33",
+            "version": "v1.34",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Setasign/tFPDF.git",
-                "reference": "050de12ab5359ce475dab49bae5cedbcf455f708"
+                "reference": "69b06444b929e0d54ffbb5efcadfe97ecbad831b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Setasign/tFPDF/zipball/050de12ab5359ce475dab49bae5cedbcf455f708",
-                "reference": "050de12ab5359ce475dab49bae5cedbcf455f708",
+                "url": "https://api.github.com/repos/Setasign/tFPDF/zipball/69b06444b929e0d54ffbb5efcadfe97ecbad831b",
+                "reference": "69b06444b929e0d54ffbb5efcadfe97ecbad831b",
                 "shasum": ""
             },
             "type": "library",
@@ -109,7 +109,7 @@
                     "homepage": "http://fpdf.org/"
                 }
             ],
-            "description": "This class is a modified version of FPDF that adds UTF-8 support. As of version 1.31 it is based on FPDF 1.82. Before it was based on FPDF 1.7.",
+            "description": "This class is a modified version of FPDF that adds UTF-8 support. The latest version is based on FPDF 1.85.",
             "homepage": "http://fpdf.org/en/script/script92.php",
             "keywords": [
                 "fpdf",
@@ -119,9 +119,9 @@
             ],
             "support": {
                 "issues": "https://github.com/Setasign/tFPDF/issues",
-                "source": "https://github.com/Setasign/tFPDF/tree/v1.33"
+                "source": "https://github.com/Setasign/tFPDF/tree/v1.34"
             },
-            "time": "2022-12-20T10:26:07+00:00"
+            "time": "2026-10-12T08:18:19+00:00"
         }
     ],
     "packages-dev": [],
@@ -139,5 +139,8 @@
         "ext-zlib": "*"
     },
     "platform-dev": {},
+    "platform-overrides": {
+        "php": "7.2.0"
+    },
     "plugin-api-version": "2.6.0"
 }
